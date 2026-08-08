@@ -7,7 +7,6 @@ from momentum.models.workflow import WorkflowRecord
 from momentum.database.base import get_db
 from momentum.config.settings import settings
 
-
 class WorkflowMemory:
     def __init__(self):
         self._store = FAISSStore(dim=128)
@@ -76,6 +75,5 @@ class WorkflowMemory:
     def reset(self):
         self._store.reset()
         self._loaded = False
-
 
 workflow_memory = WorkflowMemory()

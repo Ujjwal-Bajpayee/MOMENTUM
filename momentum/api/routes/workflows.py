@@ -3,7 +3,6 @@ from momentum.discovery.workflow_builder import get_all_workflows, get_workflow_
 
 router = APIRouter()
 
-
 @router.get("/workflows")
 def list_workflows():
     workflows = get_all_workflows()
@@ -23,7 +22,6 @@ def list_workflows():
         }
         for w in workflows
     ]
-
 
 @router.get("/workflows/{workflow_id}")
 def get_workflow(workflow_id: str):

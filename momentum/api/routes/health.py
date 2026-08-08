@@ -7,7 +7,6 @@ from momentum.learning.bandit import get_bandit
 
 router = APIRouter()
 
-
 @router.get("/health")
 def health():
     bandit = get_bandit()

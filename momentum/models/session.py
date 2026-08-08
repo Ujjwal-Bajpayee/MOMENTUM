@@ -7,7 +7,6 @@ from typing import Optional, List
 import uuid
 import json
 
-
 class SessionRecord(Base):
     __tablename__ = "sessions"
     __table_args__ = (
@@ -40,7 +39,6 @@ class SessionRecord(Base):
             return json.loads(self.event_sequence_json)
         return []
 
-
 class SessionCreate(BaseModel):
     session_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     start_time: datetime
@@ -52,7 +50,6 @@ class SessionCreate(BaseModel):
     event_sequence: List[dict] = Field(default_factory=list)
     dominant_context: Optional[str] = None
     developer_id: Optional[str] = None
-
 
 class SessionSchema(BaseModel):
     model_config = {"from_attributes": True}

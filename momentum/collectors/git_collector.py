@@ -7,7 +7,6 @@ from pathlib import Path
 from momentum.collectors.base import BaseCollector
 from momentum.models.event import EventCreate
 
-
 class GitCollector(BaseCollector):
     name = "git"
     interval_seconds = 10.0

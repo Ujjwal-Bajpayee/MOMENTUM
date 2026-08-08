@@ -1,7 +1,6 @@
 from typing import Dict, List, Set
 from dataclasses import dataclass, field
 
-
 ALL_PERMISSIONS = [
     "github.read",
     "github.write",
@@ -16,14 +15,12 @@ ALL_PERMISSIONS = [
 DANGEROUS_PERMISSIONS = {"filesystem.write", "communication.send", "github.write"}
 DEFAULT_GRANTED = {"github.read", "filesystem.read", "browser.read"}
 
-
 @dataclass
 class PermissionGrant:
     permission: str
     granted_at: str
     granted_by: str = "user"
     automation_id: str = ""
-
 
 class PermissionRegistry:
     def __init__(self):
@@ -80,9 +77,7 @@ class PermissionRegistry:
             for p in ALL_PERMISSIONS
         ]
 
-
 _permission_registry: PermissionRegistry = PermissionRegistry()
-
 
 def get_permission_registry() -> PermissionRegistry:
     return _permission_registry

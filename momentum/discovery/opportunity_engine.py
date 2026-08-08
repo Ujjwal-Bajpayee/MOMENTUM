@@ -7,7 +7,6 @@ from momentum.models.opportunity import OpportunityRecord
 from momentum.database.base import get_db
 import uuid
 
-
 WEIGHT_FREQUENCY = 0.20
 WEIGHT_TIME_COST = 0.20
 WEIGHT_REPETITION = 0.15
@@ -15,30 +14,23 @@ WEIGHT_DETERMINISM = 0.20
 WEIGHT_RISK_INVERSE = 0.10
 WEIGHT_SAVINGS = 0.15
 
-
 def _score_frequency(frequency: float) -> float:
     return float(np.clip(frequency / 25.0, 0.0, 1.0))
-
 
 def _score_time_cost(weekly_minutes: float) -> float:
     return float(np.clip(weekly_minutes / 300.0, 0.0, 1.0))
 
-
 def _score_repetition(repetition_score: float) -> float:
     return float(np.clip(repetition_score, 0.0, 1.0))
-
 
 def _score_determinism(determinism_score: float) -> float:
     return float(np.clip(determinism_score, 0.0, 1.0))
 
-
 def _score_risk_inverse(risk_score: float) -> float:
     return 1.0 - float(np.clip(risk_score, 0.0, 1.0))
 
-
 def _score_savings(annual_minutes: float) -> float:
     return float(np.clip(annual_minutes / 5000.0, 0.0, 1.0))
-
 
 def compute_automation_score(workflow: WorkflowRecord) -> float:
     freq_score = _score_frequency(workflow.frequency)
@@ -58,6 +50,43 @@ def compute_automation_score(workflow: WorkflowRecord) -> float:
     )
     return float(np.clip(raw * 100.0, 0.0, 100.0))
 
+def explain_score(workflow: WorkflowRecord) -> dict:
+    freq_score = _score_frequency(workflow.frequency)
+    time_score = _score_time_cost(workflow.estimated_weekly_minutes)
+    rep_score = _score_repetition(workflow.repetition_score)
+    det_score = _score_determinism(workflow.determinism_score)
+    risk_inv = _score_risk_inverse(workflow.risk_score)
+    sav_score = _score_savings(workflow.estimated_annual_minutes)
+    
+    score = compute_automation_score(workflow)
+    recommended = score >= 50.0
+    
+    reason = None
+    if not recommended:
+        if workflow.frequency < 1.0:
+            reason = "too_rare"
+        elif workflow.risk_score > 0.8:
+            reason = "too_risky"
+        elif workflow.determinism_score < 0.4:
+            reason = "too_inconsistent"
+        elif workflow.estimated_annual_minutes < 120.0:
+            reason = "low_time_savings"
+        else:
+            reason = "insufficient_evidence"
+            
+    return {
+        "recommended": recommended,
+        "score": score,
+        "features": {
+            "frequency": {"raw": float(workflow.frequency), "score": float(freq_score), "weight": float(WEIGHT_FREQUENCY)},
+            "time_cost": {"raw": float(workflow.estimated_weekly_minutes), "score": float(time_score), "weight": float(WEIGHT_TIME_COST)},
+            "repetition": {"raw": float(workflow.repetition_score), "score": float(rep_score), "weight": float(WEIGHT_REPETITION)},
+            "determinism": {"raw": float(workflow.determinism_score), "score": float(det_score), "weight": float(WEIGHT_DETERMINISM)},
+            "risk_inverse": {"raw": float(workflow.risk_score), "score": float(risk_inv), "weight": float(WEIGHT_RISK_INVERSE)},
+            "savings": {"raw": float(workflow.estimated_annual_minutes), "score": float(sav_score), "weight": float(WEIGHT_SAVINGS)},
+        },
+        "rejection_reason": reason
+    }
 
 def compute_confidence(
     workflow: WorkflowRecord,
@@ -83,14 +112,12 @@ def compute_confidence(
     confidence = base + evidence_boost + determinism_boost + historical_boost - variance_penalty
     return float(np.clip(confidence, 0.05, 0.98))
 
-
 def _classify_risk(risk_score: float) -> str:
     if risk_score < 0.25:
         return "Low"
     if risk_score < 0.55:
         return "Medium"
     return "High"
-
 
 def _build_reasoning(workflow: WorkflowRecord, automation_score: float, confidence: float) -> str:
     evidence_count = len(workflow.get_session_ids())
@@ -126,7 +153,6 @@ def _build_reasoning(workflow: WorkflowRecord, automation_score: float, confiden
     )
     return " ".join(parts)
 
-
 def _build_proposed_automation(workflow: WorkflowRecord) -> str:
     steps = workflow.get_steps()
     trigger = workflow.trigger or "detected event"
@@ -153,7 +179,6 @@ def _build_proposed_automation(workflow: WorkflowRecord) -> str:
     lines.append(f"  Goal: {goal}")
     return "\n".join(lines)
 
-
 def _infer_permissions(workflow: WorkflowRecord) -> List[str]:
     steps = workflow.get_steps()
     perms = {"github.read", "filesystem.read"}
@@ -171,7 +196,6 @@ def _infer_permissions(workflow: WorkflowRecord) -> List[str]:
             perms.add("terminal.execute")
 
     return sorted(perms)
-
 
 def create_opportunity(workflow: WorkflowRecord) -> OpportunityRecord:
     automation_score = compute_automation_score(workflow)
@@ -205,7 +229,6 @@ def create_opportunity(workflow: WorkflowRecord) -> OpportunityRecord:
         created_at=datetime.utcnow(),
     )
 
-
 def deduplicate_workflows(workflows: List[WorkflowRecord]) -> List[WorkflowRecord]:
     best: Dict[str, WorkflowRecord] = {}
     for wf in workflows:
@@ -213,7 +236,6 @@ def deduplicate_workflows(workflows: List[WorkflowRecord]) -> List[WorkflowRecor
         if key not in best or wf.confidence > best[key].confidence:
             best[key] = wf
     return list(best.values())
-
 
 def score_all_workflows(workflows: List[WorkflowRecord]) -> List[OpportunityRecord]:
     from momentum.config.settings import settings
@@ -229,14 +251,11 @@ def score_all_workflows(workflows: List[WorkflowRecord]) -> List[OpportunityReco
     opportunities.sort(key=lambda o: o.automation_score, reverse=True)
     return opportunities
 
-
 def save_opportunities(opportunities: List[OpportunityRecord]) -> int:
     with get_db() as db:
         for opp in opportunities:
             db.add(opp)
         return len(opportunities)
-
-
 
 def get_all_opportunities() -> List[OpportunityRecord]:
     with get_db() as db:
@@ -246,7 +265,6 @@ def get_all_opportunities() -> List[OpportunityRecord]:
             .order_by(OpportunityRecord.automation_score.desc())
             .all()
         )
-
 
 def get_opportunity_by_id(opp_id: str) -> Optional[OpportunityRecord]:
     with get_db() as db:

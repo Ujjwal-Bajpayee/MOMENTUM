@@ -1,18 +1,15 @@
 from momentum.simulation.generator import SyntheticEventGenerator
 from momentum.models.event import EventCreate
 
-
 def test_generator_produces_events():
     gen = SyntheticEventGenerator(seed=42)
     events = gen.generate_days(num_days=1)
     assert len(events) > 50
 
-
 def test_generator_7_days():
     gen = SyntheticEventGenerator(seed=42)
     events = gen.generate_days(num_days=7)
     assert len(events) > 500
-
 
 def test_generator_event_types():
     gen = SyntheticEventGenerator(seed=42)
@@ -22,7 +19,6 @@ def test_generator_event_types():
     assert "browser_navigation" in event_types
     assert "ci_event" in event_types
 
-
 def test_generator_ci_chain_embedded():
     gen = SyntheticEventGenerator(seed=42)
     events = gen.generate_days(num_days=3)
@@ -31,13 +27,11 @@ def test_generator_ci_chain_embedded():
     assert len(ci_failures) > 5
     assert len(slack_events) > 0
 
-
 def test_generator_events_sorted():
     gen = SyntheticEventGenerator(seed=42)
     events = gen.generate_days(num_days=2)
     timestamps = [e.timestamp for e in events]
     assert timestamps == sorted(timestamps)
-
 
 def test_generator_no_labels_in_events():
     gen = SyntheticEventGenerator(seed=42)

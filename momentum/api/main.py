@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from momentum.api.routes import health, workflows, opportunities, automations, events, privacy, learning
 
-
 def create_app() -> FastAPI:
     app = FastAPI(
         title="MOMENTUM API",

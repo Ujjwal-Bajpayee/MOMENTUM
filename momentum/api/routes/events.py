@@ -6,7 +6,6 @@ from momentum.models.event import EventSchema
 
 router = APIRouter()
 
-
 @router.get("/events", response_model=list)
 def list_events(
     limit: int = Query(100, le=1000),
@@ -33,7 +32,6 @@ def list_events(
         }
         for r in records
     ]
-
 
 @router.get("/events/count")
 def event_count():

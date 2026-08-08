@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import List, Optional
 from momentum.models.event import EventCreate
 
-
 class BaseCollector(ABC):
     name: str = "base"
     interval_seconds: float = 5.0

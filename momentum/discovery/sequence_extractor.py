@@ -2,7 +2,6 @@ from typing import List, Dict, Tuple, Optional
 from momentum.models.session import SessionRecord
 import re
 
-
 def extract_sequence(session: SessionRecord, min_length: int = 3) -> Optional[List[dict]]:
     seq = session.get_event_sequence()
     if len(seq) < min_length:
@@ -25,7 +24,6 @@ def extract_sequence(session: SessionRecord, min_length: int = 3) -> Optional[Li
 
     return filtered
 
-
 def _normalize_action(action: str) -> str:
     if not action:
         return ""
@@ -38,7 +36,6 @@ def _normalize_action(action: str) -> str:
             return keyword
     return action[:40].replace(" ", "_")
 
-
 def _normalize_target(target: str) -> str:
     if not target:
         return ""
@@ -47,7 +44,6 @@ def _normalize_target(target: str) -> str:
     target = re.sub(r"[a-f0-9]{7,40}", "{hash}", target)
     target = re.sub(r"\b\d{4,}\b", "{num}", target)
     return target[:50]
-
 
 def sequence_to_token_list(sequence: List[dict]) -> List[str]:
     tokens = []
@@ -58,14 +54,12 @@ def sequence_to_token_list(sequence: List[dict]) -> List[str]:
         tokens.append(tok)
     return tokens
 
-
 def compute_sequence_ngrams(sequence: List[dict], n: int = 3) -> List[Tuple]:
     tokens = sequence_to_token_list(sequence)
     ngrams = []
     for i in range(len(tokens) - n + 1):
         ngrams.append(tuple(tokens[i:i + n]))
     return ngrams
-
 
 def find_common_subsequence(sequences: List[List[dict]], threshold: float = 0.5) -> List[dict]:
     if not sequences:

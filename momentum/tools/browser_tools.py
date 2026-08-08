@@ -5,14 +5,12 @@ from momentum.tools.git_tools import BaseTool
 
 logger = logging.getLogger(__name__)
 
-
 def _get_playwright():
     try:
         from playwright.sync_api import sync_playwright
         return sync_playwright
     except ImportError:
         return None
-
 
 class BrowserNavigateTool(BaseTool):
     name = "browser_navigate"
@@ -44,7 +42,6 @@ class BrowserNavigateTool(BaseTool):
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
 
-
 class BrowserExtractTextTool(BaseTool):
     name = "browser_extract_text"
     description = "Navigate to a URL and extract visible text content from the page"
@@ -74,7 +71,6 @@ class BrowserExtractTextTool(BaseTool):
             return {"success": True, "output": {"text": text[:4000], "url": url}}
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
-
 
 class BrowserFillFormTool(BaseTool):
     name = "browser_fill_form"
@@ -107,7 +103,6 @@ class BrowserFillFormTool(BaseTool):
             return {"success": True, "output": {"filled": selector, "value_length": len(value)}}
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
-
 
 class BrowserClickTool(BaseTool):
     name = "browser_click"
@@ -144,7 +139,6 @@ class BrowserClickTool(BaseTool):
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
 
-
 class BrowserScreenshotTool(BaseTool):
     name = "browser_screenshot"
     description = "Capture a screenshot of a URL for audit logging"
@@ -176,7 +170,6 @@ class BrowserScreenshotTool(BaseTool):
             return {"success": True, "output": {"path": output_path, "url": url}}
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
-
 
 BROWSER_TOOLS = [
     BrowserNavigateTool(),

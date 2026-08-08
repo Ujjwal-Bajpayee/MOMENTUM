@@ -7,7 +7,6 @@ from momentum.models.opportunity import OpportunityRecord
 
 router = APIRouter()
 
-
 @router.get("/opportunities")
 def list_opportunities():
     opps = get_all_opportunities()
@@ -25,7 +24,6 @@ def list_opportunities():
         }
         for o in opps
     ]
-
 
 @router.get("/opportunities/{opportunity_id}")
 def get_opportunity(opportunity_id: str):
@@ -49,7 +47,6 @@ def get_opportunity(opportunity_id: str):
         "status": opp.status,
     }
 
-
 @router.post("/opportunities/{opportunity_id}/approve")
 def approve_opportunity(opportunity_id: str):
     with get_db() as db:
@@ -60,7 +57,6 @@ def approve_opportunity(opportunity_id: str):
         opp.approved_at = datetime.utcnow()
         opp.action_taken = "approved"
     return {"status": "approved", "opportunity_id": opportunity_id}
-
 
 @router.post("/opportunities/{opportunity_id}/reject")
 def reject_opportunity(opportunity_id: str, reason: str = "user_rejected"):

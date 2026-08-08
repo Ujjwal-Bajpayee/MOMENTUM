@@ -12,7 +12,6 @@ SAFE_COMMANDS = {
     "ls", "cat", "echo", "python_version", "node_version",
 }
 
-
 class RunShellCommandTool(BaseTool):
     name = "run_shell_command"
     description = "Execute a sandboxed read-only shell command and return stdout"
@@ -41,7 +40,6 @@ class RunShellCommandTool(BaseTool):
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
 
-
 class ReadFileTool(BaseTool):
     name = "read_file"
     description = "Read the contents of a local file (e.g. resume, config)"
@@ -61,7 +59,6 @@ class ReadFileTool(BaseTool):
             return {"success": True, "output": {"path": path, "content": content[:8000], "size": len(content)}}
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
-
 
 class WriteFileTool(BaseTool):
     name = "write_file"
@@ -84,7 +81,6 @@ class WriteFileTool(BaseTool):
             return {"success": True, "output": {"path": path, "bytes_written": len(content)}}
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
-
 
 class SendNotificationTool(BaseTool):
     name = "send_notification"
@@ -115,7 +111,6 @@ class SendNotificationTool(BaseTool):
         except Exception as e:
             logger.warning(f"Notification failed (non-critical): {e}")
             return {"success": True, "output": {"title": title, "message": message, "note": "notification display failed, logged only"}}
-
 
 SCRIPT_TOOLS = [
     RunShellCommandTool(),

@@ -15,7 +15,6 @@ from momentum.discovery.clusterer import compute_cluster_embedding, compute_clus
 from momentum.database.base import get_db
 import uuid
 
-
 def _infer_workflow_name(sequences: List[List[dict]], stats: Dict) -> str:
     all_targets = []
     all_actions = []
@@ -111,7 +110,6 @@ def _infer_workflow_name(sequences: List[List[dict]], stats: Dict) -> str:
         return f"Recurring {primary} Workflow"
     return "Developer Workflow"
 
-
 def _infer_trigger(common_seq: List[dict]) -> str:
     if not common_seq:
         return "periodic"
@@ -137,7 +135,6 @@ def _infer_trigger(common_seq: List[dict]) -> str:
     if "calendar" in target:
         return "scheduled:pre_meeting"
     return f"{event_type}:{action[:30]}" if action else event_type
-
 
 def _infer_goal(name: str, common_seq: List[dict]) -> str:
     event_types = set(s.get("event_type", "") for s in common_seq)
@@ -173,9 +170,6 @@ def _infer_goal(name: str, common_seq: List[dict]) -> str:
         return "Gather context and communicate status to the team"
     return f"Complete the {name.lower()} task efficiently"
 
-
-
-
 def _compute_decision_points(sequences: List[List[dict]]) -> List[str]:
     if not sequences:
         return []
@@ -197,7 +191,6 @@ def _compute_decision_points(sequences: List[List[dict]]) -> List[str]:
         if event_type in all_event_types:
             decisions.append(label)
     return decisions[:4]
-
 
 def _compute_risk_score(
     sequences: List[List[dict]],
@@ -221,14 +214,12 @@ def _compute_risk_score(
     risk += min(decision_count * 0.05, 0.25)
     return min(risk, 0.9)
 
-
 def build_workflow_from_cluster(
-    sessions: List[SessionRecord],
-    cluster_indices: List[int],
+    cluster_sessions: List[SessionRecord],
+    sequence_indices: List[int],
     embeddings: np.ndarray,
     cluster_id: int,
 ) -> Optional[WorkflowRecord]:
-    cluster_sessions = [sessions[i] for i in cluster_indices]
     sequences = [extract_sequence(s) for s in cluster_sessions]
     sequences = [s for s in sequences if s is not None]
 
@@ -274,8 +265,8 @@ def build_workflow_from_cluster(
     unique_apps = list(set(all_apps))
     unique_repos = list(set(all_repos))
 
-    coherence = compute_cluster_coherence(embeddings, cluster_indices)
-    centroid = compute_cluster_embedding(embeddings, cluster_indices)
+    coherence = compute_cluster_coherence(embeddings, sequence_indices)
+    centroid = compute_cluster_embedding(embeddings, sequence_indices)
 
     decision_points = _compute_decision_points(sequences)
     risk_score = _compute_risk_score(sequences, unique_apps, decision_points)
@@ -302,7 +293,6 @@ def build_workflow_from_cluster(
     frequency = float(np.clip(frequency, 0.1, 50.0))
     weekly_minutes = float(np.clip(frequency * avg_dur / 60.0, 1.0, 2400.0))
     annual_minutes = weekly_minutes * 52
-
 
     return WorkflowRecord(
         id=str(uuid.uuid4()),
@@ -334,7 +324,6 @@ def build_workflow_from_cluster(
         cluster_id=cluster_id,
     )
 
-
 def save_workflows(workflows: List[WorkflowRecord]) -> int:
     with get_db() as db:
         for w in workflows:
@@ -343,11 +332,9 @@ def save_workflows(workflows: List[WorkflowRecord]) -> int:
                 db.add(w)
         return len(workflows)
 
-
 def get_all_workflows() -> List[WorkflowRecord]:
     with get_db() as db:
         return db.query(WorkflowRecord).order_by(WorkflowRecord.automation_score.desc()).all()
-
 
 def get_workflow_by_id(workflow_id: str) -> Optional[WorkflowRecord]:
     with get_db() as db:

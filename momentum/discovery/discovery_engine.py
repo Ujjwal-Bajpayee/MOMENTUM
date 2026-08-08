@@ -18,7 +18,6 @@ from momentum.models.opportunity import OpportunityRecord
 
 logger = logging.getLogger(__name__)
 
-
 class DiscoveryEngine:
     def __init__(self, min_cluster_size: int = 3, eps: float = 0.35):
         self.min_cluster_size = min_cluster_size
@@ -46,7 +45,7 @@ class DiscoveryEngine:
         if progress_callback:
             progress_callback(f"Clustering {len(sessions)} sessions...")
 
-        all_sequences, cluster_groups, embeddings = cluster_sessions(
+        all_sequences, cluster_groups, embeddings, valid_indices = cluster_sessions(
             sessions,
             eps=self.eps,
             min_samples=self.min_cluster_size,
@@ -60,9 +59,11 @@ class DiscoveryEngine:
             progress_callback(f"Found {len(cluster_groups)} pattern clusters — building workflows...")
 
         raw_workflows = []
-        for cluster_id, indices in enumerate(cluster_groups):
+        for cluster_id, seq_indices in enumerate(cluster_groups):
+                                                                           
+            cluster_sessions_list = [sessions[valid_indices[i]] for i in seq_indices]
             workflow = build_workflow_from_cluster(
-                sessions, indices, embeddings, cluster_id
+                cluster_sessions_list, seq_indices, embeddings, cluster_id
             )
             if workflow is not None:
                 raw_workflows.append(workflow)
@@ -91,9 +92,7 @@ class DiscoveryEngine:
 
         return workflows, opportunities
 
-
     def get_results(self) -> Tuple[List[WorkflowRecord], List[OpportunityRecord]]:
         return get_all_workflows(), get_all_opportunities()
-
 
 discovery_engine = DiscoveryEngine()

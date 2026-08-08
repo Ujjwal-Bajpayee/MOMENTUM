@@ -2,7 +2,6 @@ import re
 from typing import Optional
 from momentum.privacy.config import PrivacyConfig, SENSITIVE_PATTERNS
 
-
 _REDACT_PATTERNS = [
     re.compile(r"(?i)(password|passwd|secret|token|api[_-]?key|private[_-]?key|bearer|credential)[^\s]*\s*[=:]\s*\S+"),
     re.compile(r"(?i)Authorization:\s*\S+\s*\S+"),
@@ -11,7 +10,6 @@ _REDACT_PATTERNS = [
     re.compile(r"github_pat_[a-zA-Z0-9_]{82}"),
     re.compile(r"(?i)-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----[\s\S]+?-----END\s+(RSA\s+)?PRIVATE\s+KEY-----"),
 ]
-
 
 class PrivacyFilter:
     def __init__(self, config: PrivacyConfig):

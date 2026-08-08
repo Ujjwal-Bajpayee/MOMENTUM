@@ -24,21 +24,17 @@ app = typer.Typer(
 
 console = Console()
 
-
 def _ensure_db():
     from momentum.database.base import init_db
     init_db()
-
 
 def _get_state() -> dict:
     from momentum.daemon.state import daemon_state
     return daemon_state.get()
 
-
 def _get_env_display() -> str:
     from momentum.config.settings import settings
     return settings.MOMENTUM_DB
-
 
 @app.command()
 def start(
@@ -77,7 +73,6 @@ def start(
         console.print(f"[dim]API: http://127.0.0.1:8000/docs[/dim]")
         run_daemon()
 
-
 @app.command()
 def stop():
     """Stop the MOMENTUM daemon."""
@@ -102,14 +97,12 @@ def stop():
     daemon_state.set_stopped()
     console.print("[bold red]■[/bold red] MOMENTUM stopped")
 
-
 @app.command()
 def restart():
     """Restart the MOMENTUM daemon."""
     stop()
     time.sleep(1)
     start()
-
 
 @app.command()
 def status():
@@ -163,6 +156,110 @@ def status():
     console.print(table)
     console.print()
 
+@app.command()
+def evaluate(
+    num_sessions: int = typer.Option(100, help="Number of benchmark sessions to generate"),
+    seed: int = typer.Option(42, help="Random seed for deterministic generation"),
+):
+    """Evaluate clustering performance against a synthetic labeled dataset."""
+    from momentum.evaluation.benchmark_generator import BenchmarkGenerator
+    from momentum.evaluation.cluster_eval import evaluate_clusters
+    from momentum.discovery.clusterer import cluster_sessions
+
+    console.print(f"[cyan]Generating benchmark dataset with {num_sessions} sessions...[/cyan]")
+    gen = BenchmarkGenerator(seed=seed)
+    sessions, labels = gen.generate_dataset(num_sessions=num_sessions)
+
+    console.print("[cyan]Running DBSCAN clustering...[/cyan]")
+    sequences, cluster_groups, embeddings, valid_indices = cluster_sessions(
+        sessions, eps=0.35, min_samples=3
+    )
+
+    console.print("[cyan]Computing evaluation metrics...[/cyan]")
+    metrics = evaluate_clusters(labels, cluster_groups, valid_indices, len(sessions))
+
+    table = Table(title="Clustering Evaluation Metrics", box=box.SIMPLE)
+    table.add_column("Metric", style="dim")
+    table.add_column("Score", style="bold green")
+
+    table.add_row("Adjusted Rand Index (ARI)", f"{metrics.get('ari', 0.0):.3f}")
+    table.add_row("Normalized Mutual Info (NMI)", f"{metrics.get('nmi', 0.0):.3f}")
+    table.add_row("Cluster Purity", f"{metrics.get('purity', 0.0):.3f}")
+    table.add_row("Signal Coverage", f"{metrics.get('coverage', 0.0):.3f}")
+    table.add_row("Noise Rate", f"{metrics.get('noise_rate', 0.0):.3f}")
+    table.add_row("Discovered Clusters", str(metrics.get("n_clusters", 0)))
+
+    console.print(table)
+
+@app.command()
+def benchmark(
+    num_sessions: int = typer.Option(200, help="Number of benchmark sessions to generate"),
+    seed: int = typer.Option(42, help="Random seed for deterministic generation"),
+):
+    """Compare TF-IDF unigram vs n-gram clustering baselines."""
+    from momentum.evaluation.benchmark_generator import BenchmarkGenerator
+    from momentum.evaluation.baselines import run_clustering_pipeline
+    from momentum.evaluation.cluster_eval import evaluate_clusters
+
+    console.print(f"[cyan]Generating benchmark dataset with {num_sessions} sessions...[/cyan]")
+    gen = BenchmarkGenerator(seed=seed)
+    sessions, labels = gen.generate_dataset(num_sessions=num_sessions)
+
+    table = Table(title="Clustering Baseline Comparison", box=box.SIMPLE)
+    table.add_column("Metric", style="dim")
+    table.add_column("TF-IDF Unigram", style="bold blue")
+    table.add_column("TF-IDF N-gram", style="bold magenta")
+
+    results = {}
+    for baseline in ["tfidf_unigram", "tfidf_ngram"]:
+        console.print(f"[cyan]Running {baseline} pipeline...[/cyan]")
+        cluster_groups, valid_indices = run_clustering_pipeline(
+            sessions, encoder_type=baseline, eps=0.35, min_samples=3
+        )
+        metrics = evaluate_clusters(labels, cluster_groups, valid_indices, len(sessions))
+        results[baseline] = metrics
+        
+    m1 = results["tfidf_unigram"]
+    m2 = results["tfidf_ngram"]
+
+    table.add_row("ARI", f"{m1.get('ari', 0.0):.3f}", f"{m2.get('ari', 0.0):.3f}")
+    table.add_row("NMI", f"{m1.get('nmi', 0.0):.3f}", f"{m2.get('nmi', 0.0):.3f}")
+    table.add_row("Purity", f"{m1.get('purity', 0.0):.3f}", f"{m2.get('purity', 0.0):.3f}")
+    table.add_row("Coverage", f"{m1.get('coverage', 0.0):.3f}", f"{m2.get('coverage', 0.0):.3f}")
+    table.add_row("Noise Rate", f"{m1.get('noise_rate', 0.0):.3f}", f"{m2.get('noise_rate', 0.0):.3f}")
+    table.add_row("Clusters", str(m1.get("n_clusters", 0)), str(m2.get("n_clusters", 0)))
+
+    console.print()
+    console.print(table)
+
+@app.command()
+def policy_eval(
+    steps: int = typer.Option(1000, help="Number of simulated steps for evaluation"),
+):
+    """Evaluate bandit policy against heuristics using simulated rewards."""
+    from momentum.evaluation.bandit_eval import simulate_environment
+    
+    console.print(f"[cyan]Simulating environment for {steps} steps...[/cyan]")
+    summary = simulate_environment(num_steps=steps)
+    
+    table = Table(title="Policy Evaluation Results", box=box.SIMPLE)
+    table.add_column("Policy", style="bold cyan")
+    table.add_column("Cumulative Reward", justify="right")
+    table.add_column("Precision", justify="right")
+    table.add_column("Success Rate", justify="right")
+    table.add_column("Unsafe Rate", justify="right", style="red")
+    
+    for policy_name, metrics in summary.items():
+        table.add_row(
+            policy_name.replace("_", " ").title(),
+            f"{metrics['cumulative_reward']:.1f}",
+            f"{metrics['recommendation_precision']:.1%}",
+            f"{metrics['success_rate']:.1%}",
+            f"{metrics['unsafe_action_rate']:.1%}"
+        )
+        
+    console.print()
+    console.print(table)
 
 @app.command()
 def pause():
@@ -173,7 +270,6 @@ def pause():
     daemon_state.set_paused()
     console.print("[yellow]⏸[/yellow]  Observation paused. Run [bold]python -m momentum resume[/bold] to continue.")
 
-
 @app.command()
 def resume():
     """Resume observation after pause."""
@@ -182,7 +278,6 @@ def resume():
     privacy_manager.resume()
     daemon_state.set_resumed()
     console.print("[green]▶[/green]  Observation resumed.")
-
 
 @app.command()
 def report():
@@ -204,7 +299,6 @@ def report():
         text = generate_report(observation_start=obs_start, observation_end=obs_end)
 
     console.print(text)
-
 
 @app.command()
 def opportunities():
@@ -255,7 +349,6 @@ def opportunities():
     console.print("[dim]Use [bold]python -m momentum approve <id>[/bold] to approve.[/dim]")
     console.print()
 
-
 @app.command()
 def inspect(
     opportunity_id: str = typer.Argument(..., help="Opportunity or workflow ID to inspect"),
@@ -291,6 +384,11 @@ def inspect(
     console.print()
     console.print(format_workflow_for_inspect(workflow, opp))
 
+    from momentum.discovery.opportunity_engine import explain_score
+    from momentum.reporting.opportunity_formatter import format_opportunity_explanation
+    console.print()
+    explain_dict = explain_score(workflow)
+    console.print(format_opportunity_explanation(explain_dict))
 
 @app.command()
 def approve(
@@ -415,13 +513,6 @@ def approve(
     console.print(f"[dim]Run [bold]python -m momentum run {auto_id}[/bold] to execute it now.[/dim]")
     console.print(f"[dim]Run [bold]python -m momentum automations[/bold] to list all automations.[/dim]")
 
-
-
-
-
-
-
-
 @app.command()
 def reject(
     opportunity_id: str = typer.Argument(..., help="Opportunity ID to reject"),
@@ -444,7 +535,6 @@ def reject(
         opp.action_taken = "rejected"
 
     console.print(f"[yellow]✗[/yellow] Opportunity [bold]{opportunity_id[:16]}...[/bold] rejected.")
-
 
 @app.command()
 def automations():
@@ -496,7 +586,6 @@ def automations():
     console.print(table)
     console.print()
     console.print("[dim]Use [bold]python -m momentum run <id>[/bold] to run an automation.[/dim]")
-
 
 @app.command(name="run")
 def run_automation(
@@ -583,7 +672,6 @@ def run_automation(
     console.print(result_table)
     console.print()
 
-
 @app.command()
 def learn():
     """Trigger a learning pass over all historical outcomes."""
@@ -613,7 +701,6 @@ def learn():
     table.add_row("Avg reward (last 20)", f"{stats['average_reward_last_20']:.3f}")
     console.print(table)
     console.print()
-
 
 @app.command()
 def simulate(
@@ -688,7 +775,6 @@ def simulate(
     console.print("[dim]Run [bold]python -m momentum report[/bold] for the full 7-day report.[/dim]")
     console.print()
 
-
 @app.command()
 def privacy(
     action: str = typer.Argument("status", help="Action: status | pause | resume | exclude <app> | include <app>"),
@@ -739,7 +825,6 @@ def privacy(
         console.print("[dim]Valid actions: status | pause | resume | exclude <app> | include <app>[/dim]")
         raise typer.Exit(1)
 
-
 @app.command()
 def reset(
     confirm: bool = typer.Option(False, "--confirm", help="Skip confirmation prompt"),
@@ -774,7 +859,6 @@ def reset(
             p.unlink()
 
     console.print(f"[bold red]⚠[/bold red] Reset complete. Deleted {deleted} events and all learned data.")
-
 
 if __name__ == "__main__":
     app()

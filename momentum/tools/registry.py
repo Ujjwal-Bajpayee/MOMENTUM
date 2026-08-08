@@ -1,7 +1,6 @@
 from typing import Dict, Optional, List
 from momentum.tools.git_tools import BaseTool, ALL_TOOLS
 
-
 def _load_all_tools() -> List[BaseTool]:
     tools = list(ALL_TOOLS)
     try:
@@ -20,7 +19,6 @@ def _load_all_tools() -> List[BaseTool]:
     except Exception:
         pass
     return tools
-
 
 class ToolRegistry:
     def __init__(self):
@@ -64,13 +62,10 @@ class ToolRegistry:
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
 
-
 _registry_instance: Optional[ToolRegistry] = None
-
 
 def get_registry() -> ToolRegistry:
     global _registry_instance
     if _registry_instance is None:
         _registry_instance = ToolRegistry()
     return _registry_instance
-

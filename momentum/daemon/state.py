@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Optional
 from momentum.config.settings import settings
 
-
 class DaemonState:
     def __init__(self):
         self._path = settings.get_state_file()
@@ -78,6 +77,5 @@ class DaemonState:
         elapsed = (datetime.utcnow() - obs_start).days + 1
         total = settings.MOMENTUM_OBSERVATION_DAYS
         return min(elapsed, total), total
-
 
 daemon_state = DaemonState()

@@ -2,7 +2,6 @@ from typing import List, Dict, Tuple, Set
 from collections import Counter
 from momentum.discovery.sequence_extractor import compute_sequence_ngrams, sequence_to_token_list
 
-
 def mine_frequent_patterns(
     sequences: List[List[dict]],
     min_support: int = 3,
@@ -19,7 +18,6 @@ def mine_frequent_patterns(
     frequent.sort(key=lambda x: x[1], reverse=True)
     return frequent
 
-
 def compute_sequence_similarity(seq_a: List[dict], seq_b: List[dict]) -> float:
     if not seq_a or not seq_b:
         return 0.0
@@ -30,7 +28,6 @@ def compute_sequence_similarity(seq_a: List[dict], seq_b: List[dict]) -> float:
     if not union:
         return 0.0
     return len(intersection) / len(union)
-
 
 def find_pattern_groups(
     sequences: List[List[dict]],
@@ -60,7 +57,6 @@ def find_pattern_groups(
             groups.append(group)
 
     return groups
-
 
 def compute_pattern_stats(
     group_sequences: List[List[dict]],

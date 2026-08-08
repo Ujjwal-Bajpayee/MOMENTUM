@@ -7,7 +7,6 @@ from typing import Optional, List, Dict
 import uuid
 import json
 
-
 class OutcomeRecord(Base):
     __tablename__ = "outcomes"
     __table_args__ = (
@@ -49,7 +48,6 @@ class OutcomeRecord(Base):
         if self.actions_json:
             return json.loads(self.actions_json)
         return []
-
 
 class OutcomeSchema(BaseModel):
     model_config = {"from_attributes": True}

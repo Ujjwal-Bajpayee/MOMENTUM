@@ -7,7 +7,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class SessionManager:
     def __init__(self):
         self._sessionizer = Sessionizer()
@@ -44,6 +43,5 @@ class SessionManager:
 
     def get_session_count(self) -> int:
         return count_sessions()
-
 
 session_manager = SessionManager()

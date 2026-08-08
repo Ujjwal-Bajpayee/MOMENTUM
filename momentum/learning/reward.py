@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Optional
 
-
 def calculate_reward(
     success: bool,
     time_saved: float,
@@ -36,7 +35,6 @@ def calculate_reward(
     reward = base + intervention_penalty + risk_penalty + consecutive_penalty + feedback_penalty + high_conf_penalty
     return float(np.clip(reward, -5.0, -0.05))
 
-
 def calculate_confidence_delta(
     success: bool,
     reward: float,
@@ -55,7 +53,6 @@ def calculate_confidence_delta(
     base_penalty = -0.08
     consecutive_factor = -0.02 * min(consecutive_failures, 5)
     return float(np.clip(base_penalty + consecutive_factor, -0.30, 0.0))
-
 
 def calculate_time_saved(
     automation_execution_time: float,

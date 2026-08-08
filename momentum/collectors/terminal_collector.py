@@ -6,7 +6,6 @@ from typing import List, Optional
 from momentum.collectors.base import BaseCollector
 from momentum.models.event import EventCreate
 
-
 class TerminalCollector(BaseCollector):
     name = "terminal"
     interval_seconds = 5.0

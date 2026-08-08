@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from momentum.models.event import EventCreate
 
-
 DEVELOPERS = [f"dev_{i:02d}" for i in range(1, 11)]
 REPOSITORIES = ["repo_alpha", "repo_beta", "repo_gamma", "repo_delta", "repo_epsilon"]
 TEAMS = {
@@ -45,16 +44,13 @@ PR_TEMPLATES = [
     "docs: update API documentation",
 ]
 
-
 def _ts(base: datetime, delta_seconds: float) -> datetime:
     return base + timedelta(seconds=delta_seconds)
-
 
 def _work_hour_offset(day_base: datetime, rng: random.Random) -> float:
     hour = rng.uniform(8.5, 17.5)
     minute_jitter = rng.uniform(-30, 30)
     return hour * 3600 + minute_jitter * 60
-
 
 class SyntheticEventGenerator:
     def __init__(self, seed: int = 42):
@@ -88,7 +84,6 @@ class SyntheticEventGenerator:
         if self.rng.random() < 0.4:
             events.extend(self._generate_incident(day_base))
         return events
-
 
     def _generate_normal_developer_activity(self, day_base: datetime) -> List[EventCreate]:
         events = []
@@ -535,7 +530,5 @@ class SyntheticEventGenerator:
             ))
         return events
 
-
 def create_generator(seed: int = 42) -> SyntheticEventGenerator:
     return SyntheticEventGenerator(seed=seed)
-

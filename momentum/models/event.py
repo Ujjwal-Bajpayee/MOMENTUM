@@ -7,7 +7,6 @@ from typing import Optional
 import uuid
 import json
 
-
 EVENT_TYPES = [
     "application_open",
     "application_close",
@@ -27,7 +26,6 @@ EVENT_TYPES = [
     "pr_event",
     "incident_event",
 ]
-
 
 class EventRecord(Base):
     __tablename__ = "events"
@@ -61,7 +59,6 @@ class EventRecord(Base):
             return json.loads(self.metadata_json)
         return {}
 
-
 class EventCreate(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     application: str
@@ -73,7 +70,6 @@ class EventCreate(BaseModel):
     source: str = "collector"
     session_id: Optional[str] = None
     privacy_level: str = "public"
-
 
 class EventSchema(BaseModel):
     model_config = {"from_attributes": True}

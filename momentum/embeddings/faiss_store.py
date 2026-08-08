@@ -4,7 +4,6 @@ from typing import List, Tuple, Optional
 from pathlib import Path
 import pickle
 
-
 class FAISSStore:
     def __init__(self, dim: int = 128):
         self.dim = dim

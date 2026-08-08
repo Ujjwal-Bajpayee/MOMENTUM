@@ -7,7 +7,6 @@ from typing import Optional, List, Dict
 import uuid
 import json
 
-
 class OpportunityRecord(Base):
     __tablename__ = "opportunities"
     __table_args__ = (
@@ -64,7 +63,6 @@ class OpportunityRecord(Base):
         if self.replay_results_json:
             return json.loads(self.replay_results_json)
         return {}
-
 
 class OpportunitySchema(BaseModel):
     model_config = {"from_attributes": True}

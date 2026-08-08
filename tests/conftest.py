@@ -4,7 +4,6 @@ from momentum.config.settings import settings
 import tempfile
 import os
 
-
 @pytest.fixture(scope="session", autouse=True)
 def tmp_db(tmp_path_factory):
     tmp = tmp_path_factory.mktemp("momentum_test")

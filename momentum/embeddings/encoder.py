@@ -5,7 +5,6 @@ from sklearn.preprocessing import normalize
 import pickle
 from pathlib import Path
 
-
 class SequenceEncoder:
     def __init__(self, model_type: str = "tfidf"):
         self.model_type = model_type
@@ -88,9 +87,7 @@ class SequenceEncoder:
             self._vectorizer = data["vectorizer"]
             self._fitted = data["fitted"]
 
-
 _encoder_instance: Optional[SequenceEncoder] = None
-
 
 def get_encoder() -> SequenceEncoder:
     global _encoder_instance

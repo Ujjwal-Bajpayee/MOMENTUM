@@ -2,12 +2,10 @@ import torch
 from momentum.learning.bandit import ContextualBandit, ACTIONS, ACTION_DIM, CONTEXT_DIM
 from momentum.learning.reward import calculate_reward, calculate_confidence_delta
 
-
 def test_bandit_initialization():
     bandit = ContextualBandit(epsilon=0.15, lr=0.001)
     assert bandit.epsilon == 0.15
     assert bandit.version == 0
-
 
 def test_bandit_select_action():
     bandit = ContextualBandit(epsilon=0.0)
@@ -30,7 +28,6 @@ def test_bandit_select_action():
     assert action_name in ACTIONS
     assert context_tensor.shape == (CONTEXT_DIM,)
 
-
 def test_bandit_update():
     bandit = ContextualBandit(epsilon=0.0)
     ctx = {k: 0.5 for k in [
@@ -44,12 +41,10 @@ def test_bandit_update():
     assert loss >= 0.0
     assert bandit.version == 1
 
-
 def test_bandit_epsilon_decay():
     bandit = ContextualBandit(epsilon=0.5)
     bandit.decay_epsilon(factor=0.9, min_epsilon=0.02)
     assert abs(bandit.epsilon - 0.45) < 0.001
-
 
 def test_reward_success():
     reward = calculate_reward(
@@ -64,7 +59,6 @@ def test_reward_success():
     )
     assert reward > 1.0
 
-
 def test_reward_failure():
     reward = calculate_reward(
         success=False,
@@ -78,7 +72,6 @@ def test_reward_failure():
     )
     assert reward < 0.0
 
-
 def test_confidence_delta_success():
     delta = calculate_confidence_delta(
         success=True,
@@ -88,7 +81,6 @@ def test_confidence_delta_success():
         consecutive_failures=0,
     )
     assert delta > 0.0
-
 
 def test_confidence_delta_failure():
     delta = calculate_confidence_delta(

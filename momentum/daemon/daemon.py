@@ -13,7 +13,6 @@ from momentum.sessions.session_manager import session_manager
 
 logger = logging.getLogger(__name__)
 
-
 class MomentumDaemon:
     def __init__(self):
         self._running = False
@@ -69,7 +68,6 @@ class MomentumDaemon:
         logger.info("MOMENTUM daemon stopped")
         sys.exit(0)
 
-
 def run_daemon():
     logging.basicConfig(
         level=getattr(logging, settings.MOMENTUM_LOG_LEVEL, logging.INFO),
@@ -77,7 +75,6 @@ def run_daemon():
     )
     daemon = MomentumDaemon()
     daemon.start()
-
 
 if __name__ == "__main__":
     run_daemon()

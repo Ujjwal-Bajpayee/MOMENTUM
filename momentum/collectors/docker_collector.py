@@ -5,7 +5,6 @@ from typing import List, Optional
 from momentum.collectors.base import BaseCollector
 from momentum.models.event import EventCreate
 
-
 class DockerCollector(BaseCollector):
     name = "docker"
     interval_seconds = 15.0

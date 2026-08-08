@@ -6,7 +6,6 @@ from momentum.models.workflow import WorkflowRecord
 from momentum.models.opportunity import OpportunityRecord
 from momentum.models.automation import AutomationRecord
 
-
 def format_approve_prompt(
     workflow: WorkflowRecord,
     opportunity: OpportunityRecord,
@@ -69,3 +68,43 @@ def format_approve_prompt(
         "═" * 60,
     ]
     return "\n".join(lines)
+
+def format_opportunity_explanation(explain_dict: dict):
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.console import Group
+
+    table = Table(box=None, expand=False, show_header=True)
+    table.add_column("Feature", style="dim")
+    table.add_column("Raw Value", justify="right")
+    table.add_column("Score (0-1)", justify="right")
+    table.add_column("Weight", justify="right")
+    table.add_column("Contribution", style="cyan", justify="right")
+
+    features = explain_dict.get("features", {})
+    for feat_name, feat_data in features.items():
+        raw = feat_data.get("raw", 0)
+        score = feat_data.get("score", 0)
+        weight = feat_data.get("weight", 0)
+        contrib = score * weight * 100
+        table.add_row(
+            feat_name.replace("_", " ").title(),
+            f"{raw:.2f}",
+            f"{score:.2f}",
+            f"{weight:.2f}",
+            f"+{contrib:.1f}"
+        )
+
+    score_val = explain_dict.get("score", 0)
+    recommended = explain_dict.get("recommended", False)
+    reason = explain_dict.get("rejection_reason", "None")
+
+    summary_color = "green" if recommended else "red"
+    summary_text = f"[{summary_color}]Final Score: {score_val:.1f}/100"
+    if not recommended:
+        summary_text += f"\nRejected: {reason}"
+    else:
+        summary_text += "\nRecommended for Automation"
+
+    group = Group(table, "\n", summary_text)
+    return Panel(group, title="Recommendation Explanation", border_style=summary_color)

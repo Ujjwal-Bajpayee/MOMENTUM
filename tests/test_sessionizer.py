@@ -3,7 +3,6 @@ from momentum.sessions.sessionizer import Sessionizer
 from momentum.models.event import EventRecord
 import uuid
 
-
 def _make_event(ts: datetime, event_type: str = "terminal_command", app: str = "terminal") -> EventRecord:
     e = EventRecord()
     e.id = str(uuid.uuid4())
@@ -19,7 +18,6 @@ def _make_event(ts: datetime, event_type: str = "terminal_command", app: str = "
     e.privacy_level = "public"
     return e
 
-
 def test_single_session():
     now = datetime.utcnow()
     events = [_make_event(now + timedelta(seconds=i * 30)) for i in range(10)]
@@ -27,7 +25,6 @@ def test_single_session():
     sessions = sessionizer.process_events(events)
     assert len(sessions) == 1
     assert sessions[0].event_count >= 2
-
 
 def test_two_sessions_with_gap():
     now = datetime.utcnow()
@@ -37,7 +34,6 @@ def test_two_sessions_with_gap():
     sessionizer = Sessionizer(gap_seconds=300)
     sessions = sessionizer.process_events(events)
     assert len(sessions) == 2
-
 
 def test_idle_event_splits_session():
     now = datetime.utcnow()
@@ -59,7 +55,6 @@ def test_idle_event_splits_session():
     sessionizer = Sessionizer(gap_seconds=300)
     sessions = sessionizer.process_events(all_events)
     assert len(sessions) >= 1
-
 
 def test_session_applications():
     now = datetime.utcnow()

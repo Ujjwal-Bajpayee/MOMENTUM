@@ -12,7 +12,6 @@ from momentum.policy.policy import should_require_approval
 
 logger = logging.getLogger(__name__)
 
-
 def _validate_execution_preconditions(automation: AutomationRecord) -> Tuple[bool, str]:
     if automation.status == "paused":
         return False, "Automation is paused"
@@ -29,7 +28,6 @@ def _validate_execution_preconditions(automation: AutomationRecord) -> Tuple[boo
                 return False, f"Missing dangerous permission(s): {missing}"
 
     return True, "OK"
-
 
 def execute_automation(
     automation: AutomationRecord,
@@ -146,8 +144,6 @@ def execute_automation(
         f"time={elapsed:.2f}s steps={len(actions_executed)} dry_run={dry_run}"
     )
     return outcome
-
-
 
 def _create_failed_outcome(
     automation: AutomationRecord,

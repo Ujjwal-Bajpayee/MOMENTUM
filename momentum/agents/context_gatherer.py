@@ -45,7 +45,6 @@ WORKFLOW_QUESTIONS = {
     ],
 }
 
-
 def _classify_workflow_type(workflow: WorkflowRecord) -> str:
     steps = workflow.get_steps()
     apps = [s.get("application", "") for s in steps]
@@ -71,7 +70,6 @@ def _classify_workflow_type(workflow: WorkflowRecord) -> str:
     if has_data_entry:
         return "data_entry"
     return "generic"
-
 
 def gather_context(workflow: WorkflowRecord) -> Dict:
     from rich.console import Console
@@ -106,7 +104,6 @@ def gather_context(workflow: WorkflowRecord) -> Dict:
         console.print()
 
     return user_context
-
 
 def format_context_for_llm(user_context: Dict) -> str:
     lines = ["User provided context:"]

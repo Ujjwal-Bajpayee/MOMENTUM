@@ -7,7 +7,6 @@ from typing import Optional, List, Dict
 import uuid
 import json
 
-
 class AutomationRecord(Base):
     __tablename__ = "automations"
     __table_args__ = (
@@ -68,7 +67,6 @@ class AutomationRecord(Base):
         if self.conditions_json:
             return json.loads(self.conditions_json)
         return []
-
 
 class AutomationSchema(BaseModel):
     model_config = {"from_attributes": True}

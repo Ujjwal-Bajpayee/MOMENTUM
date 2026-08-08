@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import logging
 from typing import Optional, Dict, List
@@ -7,12 +7,10 @@ from momentum.models.opportunity import OpportunityRecord
 
 logger = logging.getLogger(__name__)
 
-
 def _get_api_key() -> Optional[str]:
     from momentum.config.settings import settings
     key = settings.MOMENTUM_LLM_API_KEY or os.environ.get("OPENAI_API_KEY", "")
     return key.strip() if key else None
-
 
 def _require_api_key() -> str:
     key = _get_api_key()
@@ -24,7 +22,6 @@ def _require_api_key() -> str:
         )
     return key
 
-
 def _get_llm(api_key: str):
     from langchain_openai import ChatOpenAI
     from momentum.config.settings import settings
@@ -34,7 +31,6 @@ def _get_llm(api_key: str):
         temperature=0.3,
         max_tokens=700,
     )
-
 
 def interpret_workflow(workflow: WorkflowRecord) -> Dict:
     api_key = _require_api_key()
@@ -67,29 +63,18 @@ Provide JSON with:
 
 Keep each field under 100 words. Respond in JSON only."""
 
-    try:
-        response = llm.invoke([
-            SystemMessage(content="You are a workflow analysis expert. Respond in JSON only."),
-            HumanMessage(content=prompt),
-        ])
-        text = response.content.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-        data = json.loads(text)
-        data["model"] = settings.MOMENTUM_LLM_MODEL
-        return data
-    except Exception as e:
-        logger.error(f"LLM interpret failed: {e}")
-        return {
-            "goal": workflow.goal or workflow.name,
-            "automation_explanation": f"Repeats {workflow.frequency:.1f}x/week.",
-            "risk_explanation": "Unknown.",
-            "confidence_explanation": f"Confidence {workflow.confidence:.0%}.",
-            "model": "error",
-        }
-
+    response = llm.invoke([
+        SystemMessage(content="You are a workflow analysis expert. Respond in JSON only."),
+        HumanMessage(content=prompt),
+    ])
+    text = response.content.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    data = json.loads(text)
+    data["model"] = settings.MOMENTUM_LLM_MODEL
+    return data
 
 def generate_automation_plan(
     workflow: WorkflowRecord,
@@ -129,23 +114,23 @@ User provided context:
 {tool_schema}
 
 Generate a JSON automation plan using ONLY tools from the list above:
-{{
+{ 
   "name": "short descriptive name",
   "description": "one sentence description",
-  "trigger": {{"type": "scheduled|event|manual", "cron": "0 9 * * 1-5"}},
+  "trigger": { "type": "scheduled|event|manual", "cron": "0 9 * * 1-5"} ,
   "steps": [
-    {{
+    { 
       "tool": "tool_name",
-      "params": {{"key": "value"}},
+      "params": { "key": "value"} ,
       "description": "what this step does",
       "requires_confirmation": false,
       "critical": false
-    }}
+    } 
   ],
   "estimated_time_saved_minutes": 0,
   "risks": ["risk1"],
   "permissions_needed": ["browser.read"]
-}}
+} 
 
 Rules:
 - Only use tools from the Available tools list
@@ -180,18 +165,13 @@ Rules:
     plan["model"] = settings.MOMENTUM_LLM_MODEL
     return plan
 
-
 def interpret_opportunity(opportunity: OpportunityRecord, workflow: WorkflowRecord) -> str:
     api_key = _require_api_key()
-    try:
-        from langchain.schema import HumanMessage
-        llm = _get_llm(api_key)
-        prompt = (
-            f"Explain in 2-3 sentences why '{workflow.name}' (score: {opportunity.automation_score:.0f}/100, "
-            f"confidence: {opportunity.confidence:.0%}) is a strong automation candidate."
-        )
-        response = llm.invoke([HumanMessage(content=prompt)])
-        return response.content.strip()
-    except Exception as e:
-        logger.error(f"interpret_opportunity failed: {e}")
-        return opportunity.reasoning or ""
+    from langchain.schema import HumanMessage
+    llm = _get_llm(api_key)
+    prompt = (
+        f"Explain in 2-3 sentences why '{workflow.name}' (score: {opportunity.automation_score:.0f}/100, "
+        f"confidence: {opportunity.confidence:.0%}) is a strong automation candidate."
+    )
+    response = llm.invoke([HumanMessage(content=prompt)])
+    return response.content.strip()

@@ -1,7 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -45,6 +44,5 @@ class Settings(BaseSettings):
 
     def get_state_file(self) -> Path:
         return self.get_data_dir() / "daemon_state.json"
-
 
 settings = Settings()

@@ -3,7 +3,6 @@ from momentum.privacy.filter import PrivacyFilter
 from momentum.config.settings import settings
 from typing import Optional
 
-
 class PrivacyManager:
     def __init__(self):
         self._config: Optional[PrivacyConfig] = None
@@ -54,6 +53,5 @@ class PrivacyManager:
     def reload(self):
         self._config = None
         self._filter = None
-
 
 privacy_manager = PrivacyManager()

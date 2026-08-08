@@ -1,13 +1,11 @@
 from momentum.privacy.config import PrivacyConfig
 from momentum.privacy.filter import PrivacyFilter
 
-
 def test_default_config():
     config = PrivacyConfig()
     assert not config.observation_paused
     assert config.collect_terminal_commands
     assert len(config.excluded_applications) > 0
-
 
 def test_application_exclusion():
     config = PrivacyConfig()
@@ -17,14 +15,12 @@ def test_application_exclusion():
     assert pfilter.is_application_allowed("vscode")
     assert pfilter.is_application_allowed("terminal")
 
-
 def test_redact_api_key():
     config = PrivacyConfig()
     pfilter = PrivacyFilter(config)
     text = "running with OPENAI_API_KEY=sk-abcdef123456789012345678901234567890"
     result = pfilter.redact_sensitive(text)
     assert "sk-" not in result or "[REDACTED]" in result
-
 
 def test_redact_github_token():
     config = PrivacyConfig()
@@ -33,13 +29,11 @@ def test_redact_github_token():
     result = pfilter.redact_sensitive(text)
     assert "ghp_" not in result
 
-
 def test_paused_filter_blocks_collection():
     config = PrivacyConfig()
     config.observation_paused = True
     pfilter = PrivacyFilter(config)
     assert not pfilter.should_collect()
-
 
 def test_metadata_filtering():
     config = PrivacyConfig()

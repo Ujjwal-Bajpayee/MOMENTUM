@@ -15,7 +15,6 @@ from momentum.models.event import EventCreate
 
 logger = logging.getLogger(__name__)
 
-
 class CollectorManager:
     def __init__(self):
         self._collectors: List[BaseCollector] = [

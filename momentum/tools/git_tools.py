@@ -2,7 +2,6 @@ import random
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
-
 @dataclass
 class ToolResult:
     success: bool
@@ -18,7 +17,6 @@ class ToolResult:
             "execution_time_ms": self.execution_time_ms,
         }
 
-
 class BaseTool:
     name: str = "base"
     description: str = ""
@@ -31,7 +29,6 @@ class BaseTool:
 
     def validate_input(self, context: Dict) -> bool:
         return True
-
 
 class GitStatusTool(BaseTool):
     name = "git_status"
@@ -53,7 +50,6 @@ class GitStatusTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class GitLogTool(BaseTool):
     name = "git_log"
@@ -86,7 +82,6 @@ class GitLogTool(BaseTool):
             output={"repository": repo, "commits": commits, "dry_run": dry_run},
         ).to_dict()
 
-
 class GitDiffTool(BaseTool):
     name = "git_diff"
     description = "Get diff of recent changes"
@@ -105,7 +100,6 @@ class GitDiffTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class SearchRepositoryTool(BaseTool):
     name = "search_repository"
@@ -126,7 +120,6 @@ class SearchRepositoryTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class RunTestsTool(BaseTool):
     name = "run_tests"
@@ -152,7 +145,6 @@ class RunTestsTool(BaseTool):
             },
         ).to_dict()
 
-
 class GetGithubPRTool(BaseTool):
     name = "get_github_pull_request"
     description = "Retrieve GitHub pull request details"
@@ -174,7 +166,6 @@ class GetGithubPRTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class GetGithubCommitTool(BaseTool):
     name = "get_github_commit"
@@ -199,7 +190,6 @@ class GetGithubCommitTool(BaseTool):
             },
         ).to_dict()
 
-
 class GetGithubCITool(BaseTool):
     name = "get_github_ci"
     description = "Retrieve CI/CD pipeline status and logs"
@@ -219,7 +209,6 @@ class GetGithubCITool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class SearchDocumentationTool(BaseTool):
     name = "search_documentation"
@@ -241,7 +230,6 @@ class SearchDocumentationTool(BaseTool):
             },
         ).to_dict()
 
-
 class SearchLocalHistoryTool(BaseTool):
     name = "search_local_history"
     description = "Search MOMENTUM's local observation history for similar past events"
@@ -260,7 +248,6 @@ class SearchLocalHistoryTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class FindCodeOwnerTool(BaseTool):
     name = "find_code_owner"
@@ -281,7 +268,6 @@ class FindCodeOwnerTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class ClassifyCIFailureTool(BaseTool):
     name = "classify_ci_failure"
@@ -305,7 +291,6 @@ class ClassifyCIFailureTool(BaseTool):
             },
         ).to_dict()
 
-
 class CreateDraftIssueTool(BaseTool):
     name = "create_draft_issue"
     description = "Create a draft GitHub issue (not submitted without explicit approval)"
@@ -326,7 +311,6 @@ class CreateDraftIssueTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class CreateDraftMessageTool(BaseTool):
     name = "create_draft_message"
@@ -349,7 +333,6 @@ class CreateDraftMessageTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 class GenerateReleaseNotesTool(BaseTool):
     name = "generate_release_notes"
@@ -377,7 +360,6 @@ class GenerateReleaseNotesTool(BaseTool):
             },
         ).to_dict()
 
-
 class SummarizeIncidentTool(BaseTool):
     name = "summarize_incident"
     description = "Generate a structured incident summary from CI and communication data"
@@ -401,7 +383,6 @@ class SummarizeIncidentTool(BaseTool):
                 "dry_run": dry_run,
             },
         ).to_dict()
-
 
 ALL_TOOLS = [
     GitStatusTool(),

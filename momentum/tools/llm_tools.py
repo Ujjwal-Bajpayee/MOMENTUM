@@ -4,14 +4,12 @@ from momentum.tools.git_tools import BaseTool
 
 logger = logging.getLogger(__name__)
 
-
 def _get_llm(api_key: str, model: str = "gpt-4o-mini"):
     try:
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(model=model, api_key=api_key, temperature=0.3, max_tokens=800)
     except Exception:
         return None
-
 
 class LLMFillTextTool(BaseTool):
     name = "llm_fill_text"
@@ -55,7 +53,6 @@ class LLMFillTextTool(BaseTool):
             return {"success": True, "output": {"generated_text": response.content.strip(), "text_type": text_type}}
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
-
 
 class LLMClassifyTool(BaseTool):
     name = "llm_classify"
@@ -101,7 +98,7 @@ class LLMClassifyTool(BaseTool):
 Text to classify:
 {text[:2000]}
 
-Respond in JSON: {{"label": "...", "score": 0.0-1.0, "reasoning": "..."}}"""
+Respond in JSON: { "label": "...", "score": 0.0-1.0, "reasoning": "..."} """
 
             response = llm.invoke([
                 SystemMessage(content="You are a classification assistant. Respond with JSON only."),
@@ -117,7 +114,6 @@ Respond in JSON: {{"label": "...", "score": 0.0-1.0, "reasoning": "..."}}"""
             return {"success": True, "output": result}
         except Exception as e:
             return {"success": False, "error": str(e), "output": None}
-
 
 LLM_TOOLS = [
     LLMFillTextTool(),

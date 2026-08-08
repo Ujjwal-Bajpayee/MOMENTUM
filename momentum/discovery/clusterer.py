@@ -6,12 +6,11 @@ from momentum.embeddings.encoder import get_encoder
 from momentum.models.session import SessionRecord
 from momentum.discovery.sequence_extractor import extract_sequence
 
-
 def cluster_sessions(
     sessions: List[SessionRecord],
     eps: float = 0.35,
     min_samples: int = 3,
-) -> Tuple[List[List[dict]], List[List[int]], np.ndarray]:
+) -> Tuple[List[List[dict]], List[List[int]], np.ndarray, List[int]]:
     sequences = []
     valid_indices = []
 
@@ -22,7 +21,7 @@ def cluster_sessions(
             valid_indices.append(i)
 
     if len(sequences) < min_samples:
-        return sequences, [], np.array([])
+        return sequences, [], np.array([]), valid_indices
 
     encoder = get_encoder()
     encoder.fit(sequences)
@@ -48,10 +47,8 @@ def cluster_sessions(
         cluster_map[label].append(seq_idx)
 
     cluster_groups = [indices for indices in cluster_map.values() if len(indices) >= min_samples]
-    cluster_sequences = [[sequences[i] for i in group] for group in cluster_groups]
 
-    return sequences, cluster_groups, embeddings
-
+    return sequences, cluster_groups, embeddings, valid_indices
 
 def get_cluster_embedding(
     embeddings: np.ndarray,
@@ -66,9 +63,7 @@ def get_cluster_embedding(
         centroid = centroid / norm
     return centroid.astype(np.float32)
 
-
 compute_cluster_embedding = get_cluster_embedding
-
 
 def compute_cluster_coherence(
     embeddings: np.ndarray,

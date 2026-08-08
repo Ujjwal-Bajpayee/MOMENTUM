@@ -8,7 +8,6 @@ from momentum.execution.outcome_recorder import record_and_learn, get_outcomes_f
 
 router = APIRouter()
 
-
 @router.get("/automations")
 def list_automations():
     with get_db() as db:
@@ -32,7 +31,6 @@ def list_automations():
         ]
     return result
 
-
 @router.post("/automations/{automation_id}/run")
 def run_automation(automation_id: str, dry_run: bool = False):
     with get_db() as db:
@@ -54,7 +52,6 @@ def run_automation(automation_id: str, dry_run: bool = False):
         "autonomy_after": learn_result["autonomy_after"],
     }
 
-
 @router.post("/automations/{automation_id}/pause")
 def pause_automation(automation_id: str):
     with get_db() as db:
@@ -64,7 +61,6 @@ def pause_automation(automation_id: str):
         auto.status = "paused"
     return {"status": "paused", "automation_id": automation_id}
 
-
 @router.post("/automations/{automation_id}/resume")
 def resume_automation(automation_id: str):
     with get_db() as db:
@@ -73,7 +69,6 @@ def resume_automation(automation_id: str):
             raise HTTPException(status_code=404, detail="Automation not found")
         auto.status = "active"
     return {"status": "active", "automation_id": automation_id}
-
 
 @router.get("/automations/{automation_id}/outcomes")
 def get_automation_outcomes(automation_id: str):

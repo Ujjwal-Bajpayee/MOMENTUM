@@ -4,14 +4,11 @@ from contextlib import contextmanager
 from typing import Generator
 from pathlib import Path
 
-
 class Base(DeclarativeBase):
     pass
 
-
 _engine = None
 _SessionFactory = None
-
 
 def get_engine():
     global _engine
@@ -26,19 +23,16 @@ def get_engine():
         )
     return _engine
 
-
 def reset_engine():
     global _engine, _SessionFactory
     _engine = None
     _SessionFactory = None
-
 
 def get_session_factory():
     global _SessionFactory
     if _SessionFactory is None:
         _SessionFactory = sessionmaker(bind=get_engine(), expire_on_commit=False)
     return _SessionFactory
-
 
 @contextmanager
 def get_db() -> Generator[Session, None, None]:
@@ -52,7 +46,6 @@ def get_db() -> Generator[Session, None, None]:
         raise
     finally:
         session.close()
-
 
 def init_db():
     from momentum.models import event as _e

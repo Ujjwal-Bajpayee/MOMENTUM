@@ -8,7 +8,6 @@ from momentum.sessions.sessionizer import count_sessions
 from momentum.discovery.workflow_builder import get_all_workflows
 from momentum.discovery.opportunity_engine import get_all_opportunities
 
-
 def generate_report(
     observation_start: Optional[datetime] = None,
     observation_end: Optional[datetime] = None,
@@ -71,7 +70,6 @@ def generate_report(
     ]
 
     return "\n".join(lines)
-
 
 def format_workflow_for_inspect(
     workflow: WorkflowRecord,

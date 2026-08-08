@@ -7,7 +7,6 @@ from typing import Optional, List, Dict
 import uuid
 import json
 
-
 class WorkflowRecord(Base):
     __tablename__ = "workflows"
     __table_args__ = (
@@ -84,7 +83,6 @@ class WorkflowRecord(Base):
         if self.similar_workflows_json:
             return json.loads(self.similar_workflows_json)
         return []
-
 
 class WorkflowSchema(BaseModel):
     model_config = {"from_attributes": True}

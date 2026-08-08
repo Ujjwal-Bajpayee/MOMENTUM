@@ -5,7 +5,6 @@ import numpy as np
 from typing import Tuple, List, Optional, Dict
 from pathlib import Path
 
-
 CONTEXT_DIM = 12
 ACTION_DIM = 8
 
@@ -19,7 +18,6 @@ ACTIONS = [
     "REDUCE_AUTONOMY",
     "DO_NOT_AUTOMATE",
 ]
-
 
 class PolicyNetwork(nn.Module):
     def __init__(self, context_dim: int = CONTEXT_DIM, action_dim: int = ACTION_DIM):
@@ -35,7 +33,6 @@ class PolicyNetwork(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.network(x)
-
 
 class ContextualBandit:
     def __init__(
@@ -90,6 +87,28 @@ class ContextualBandit:
         action_idx = int(q_values.argmax().item())
         q_dict = {ACTIONS[i]: float(q_values[i].item()) for i in range(ACTION_DIM)}
         return ACTIONS[action_idx], q_dict
+
+    def explain_action(self, workflow_context: Dict) -> Dict:
+        action, q_dict = self.get_recommended_action(workflow_context)
+        context_tensor = self._extract_context(workflow_context)
+        features_names = [
+            "frequency", "average_duration", "duration_variance", "repetition_score",
+            "determinism_score", "risk_score", "decision_count", "estimated_savings",
+            "implementation_effort", "historical_success", "user_approval_rate",
+            "workflow_similarity"
+        ]
+        
+        feature_vals = context_tensor.numpy().tolist()
+        top_features = sorted(zip(features_names, feature_vals), key=lambda x: x[1], reverse=True)[:3]
+        
+        reason = "Based on high " + ", ".join([f[0].replace('_', ' ') for f in top_features])
+        
+        return {
+            "selected_action": action,
+            "q_values": q_dict,
+            "top_features": top_features,
+            "reason": reason
+        }
 
     def update(
         self,
@@ -159,9 +178,7 @@ class ContextualBandit:
         self.epsilon = checkpoint.get("epsilon", self.epsilon)
         self._reward_history = checkpoint.get("reward_history", [])
 
-
 _bandit_instance: Optional[ContextualBandit] = None
-
 
 def get_bandit() -> ContextualBandit:
     global _bandit_instance

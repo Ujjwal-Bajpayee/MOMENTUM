@@ -4,7 +4,6 @@ from momentum.database.base import get_db
 from momentum.models.event import EventRecord, EventCreate
 import json
 
-
 def store_event(event: EventCreate) -> str:
     with get_db() as db:
         record = EventRecord(
@@ -22,7 +21,6 @@ def store_event(event: EventCreate) -> str:
         db.add(record)
         db.flush()
         return record.id
-
 
 def store_events_bulk(events: List[EventCreate]) -> int:
     with get_db() as db:
@@ -43,7 +41,6 @@ def store_events_bulk(events: List[EventCreate]) -> int:
         ]
         db.bulk_save_objects(records)
         return len(records)
-
 
 def get_events(
     start_time: Optional[datetime] = None,
@@ -68,7 +65,6 @@ def get_events(
             q = q.filter(EventRecord.session_id == session_id)
         return q.order_by(EventRecord.timestamp).offset(offset).limit(limit).all()
 
-
 def count_events(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
@@ -81,7 +77,6 @@ def count_events(
             q = q.filter(EventRecord.timestamp <= end_time)
         return q.count()
 
-
 def get_events_for_session(session_id: str) -> List[EventRecord]:
     with get_db() as db:
         return (
@@ -90,7 +85,6 @@ def get_events_for_session(session_id: str) -> List[EventRecord]:
             .order_by(EventRecord.timestamp)
             .all()
         )
-
 
 def delete_all_events() -> int:
     with get_db() as db:

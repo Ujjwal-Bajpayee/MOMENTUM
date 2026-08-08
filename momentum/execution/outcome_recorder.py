@@ -10,7 +10,6 @@ from momentum.database.base import get_db
 
 logger = logging.getLogger(__name__)
 
-
 def record_and_learn(
     outcome: OutcomeRecord,
     automation: AutomationRecord,
@@ -47,7 +46,6 @@ def record_and_learn(
         "autonomy_before": outcome.autonomy_before,
         "autonomy_after": outcome.autonomy_after,
     }
-
 
 def get_outcomes_for_automation(automation_id: str) -> list:
     with get_db() as db:

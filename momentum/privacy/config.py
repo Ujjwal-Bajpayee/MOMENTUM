@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from dataclasses import dataclass, field, asdict
 
-
 DEFAULT_EXCLUDED_APPS = [
     "1password",
     "lastpass",
@@ -50,7 +49,6 @@ SENSITIVE_PATTERNS = [
     "basic ",
 ]
 
-
 @dataclass
 class PrivacyConfig:
     excluded_applications: List[str] = field(default_factory=lambda: list(DEFAULT_EXCLUDED_APPS))
@@ -70,7 +68,6 @@ class PrivacyConfig:
     def from_dict(cls, data: Dict) -> "PrivacyConfig":
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
-
 def load_privacy_config(config_path: str) -> PrivacyConfig:
     p = Path(config_path)
     if p.exists():
@@ -78,7 +75,6 @@ def load_privacy_config(config_path: str) -> PrivacyConfig:
             data = json.load(f)
         return PrivacyConfig.from_dict(data)
     return PrivacyConfig()
-
 
 def save_privacy_config(config: PrivacyConfig, config_path: str):
     p = Path(config_path)

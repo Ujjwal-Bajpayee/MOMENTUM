@@ -11,7 +11,6 @@ from momentum.learning.bandit import get_bandit
 
 logger = logging.getLogger(__name__)
 
-
 def run_simulation(
     days: int = 7,
     seed: int = 42,
@@ -102,7 +101,6 @@ def run_simulation(
                 db.add(auto)
                 db.flush()
                 auto_id = auto.id
-
 
             for i in range(8):
                 success = rng.random() < (0.75 + i * 0.02)

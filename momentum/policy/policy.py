@@ -1,7 +1,6 @@
 from typing import Dict, Tuple
 from momentum.learning.bandit import ACTIONS
 
-
 AUTONOMY_LEVELS = {
     0: "observation",
     1: "recommendation",
@@ -23,7 +22,6 @@ ACTION_TO_AUTONOMY: Dict[str, int] = {
 }
 
 HIGH_RISK_THRESHOLD = 0.65
-
 
 def compute_autonomy_level(
     current_level: int,
@@ -51,20 +49,16 @@ def compute_autonomy_level(
 
     return current_level
 
-
 def action_name_to_autonomy(action_name: str) -> int:
     return ACTION_TO_AUTONOMY.get(action_name, 3)
 
-
 def get_autonomy_description(level: int) -> str:
     return AUTONOMY_LEVELS.get(level, "unknown")
-
 
 def should_require_approval(autonomy_level: int, risk_score: float) -> bool:
     if risk_score >= HIGH_RISK_THRESHOLD:
         return True
     return autonomy_level < 4
-
 
 def get_policy_summary(
     autonomy_level: int,

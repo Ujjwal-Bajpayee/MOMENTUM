@@ -7,10 +7,8 @@ from momentum.database.base import get_db
 import json
 import uuid
 
-
 SESSION_GAP_SECONDS = 300
 MIN_SESSION_EVENTS = 2
-
 
 @dataclass
 class ActiveSession:
@@ -64,7 +62,6 @@ class ActiveSession:
             }
             for e in self.events
         ]
-
 
 class Sessionizer:
     def __init__(self, gap_seconds: float = SESSION_GAP_SECONDS):
@@ -122,7 +119,6 @@ class Sessionizer:
             developer_id=s.developer_id,
         )
 
-
 def save_sessions(sessions: List[SessionCreate]) -> int:
     with get_db() as db:
         records = [
@@ -143,7 +139,6 @@ def save_sessions(sessions: List[SessionCreate]) -> int:
         db.bulk_save_objects(records)
         return len(records)
 
-
 def get_sessions(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
@@ -156,7 +151,6 @@ def get_sessions(
         if end_time:
             q = q.filter(SessionRecord.start_time <= end_time)
         return q.order_by(SessionRecord.start_time).limit(limit).all()
-
 
 def count_sessions() -> int:
     with get_db() as db:

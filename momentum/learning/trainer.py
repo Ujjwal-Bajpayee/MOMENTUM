@@ -10,7 +10,6 @@ from momentum.database.base import get_db
 
 logger = logging.getLogger(__name__)
 
-
 def build_workflow_context(automation: AutomationRecord, workflow_data: Optional[dict] = None) -> dict:
     plan = automation.get_plan()
     wf = workflow_data or {}
@@ -32,7 +31,6 @@ def build_workflow_context(automation: AutomationRecord, workflow_data: Optional
         ),
         "workflow_similarity": 0.5,
     }
-
 
 def process_outcome(outcome: OutcomeRecord, automation: AutomationRecord, workflow_data: Optional[dict] = None) -> float:
     bandit = get_bandit()
@@ -90,7 +88,6 @@ def process_outcome(outcome: OutcomeRecord, automation: AutomationRecord, workfl
 
     logger.info(f"Outcome processed: success={outcome.success} reward={reward:.3f} conf_delta={conf_delta:+.3f} loss={loss:.4f}")
     return reward
-
 
 def run_learning_from_history() -> dict:
     bandit = get_bandit()
