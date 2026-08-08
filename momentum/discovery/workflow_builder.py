@@ -243,19 +243,26 @@ def build_workflow_from_cluster(
     name = _infer_workflow_name(sequences, stats)
 
     durations = [s.duration or 0.0 for s in cluster_sessions if s.duration]
-    avg_dur = float(np.mean(durations)) if durations else 120.0
-    med_dur = float(np.median(durations)) if durations else 120.0
+    raw_avg_dur = float(np.mean(durations)) if durations else 120.0
+    avg_dur = float(np.clip(raw_avg_dur, 30.0, 5400.0))
+    med_dur = float(np.clip(np.median(durations), 30.0, 5400.0)) if durations else 120.0
     var_dur = float(np.var(durations)) if len(durations) > 1 else 0.0
 
     timestamps = sorted([s.start_time for s in cluster_sessions if s.start_time])
     first_seen = timestamps[0] if timestamps else None
     last_seen = timestamps[-1] if timestamps else None
 
+    unique_devs = len(set(
+        s.developer_id for s in cluster_sessions if s.developer_id
+    ))
+    unique_devs = max(unique_devs, 1)
+
     if first_seen and last_seen:
         total_days = max((last_seen - first_seen).total_seconds() / 86400, 1.0)
-        frequency = len(sequences) / total_days * 7
+        raw_frequency = len(sequences) / total_days * 7
+        frequency = raw_frequency / unique_devs
     else:
-        frequency = float(len(sequences))
+        frequency = float(len(sequences)) / unique_devs
 
     all_apps = []
     all_repos = []
@@ -292,8 +299,10 @@ def build_workflow_from_cluster(
     trigger = _infer_trigger(common_seq)
     goal = _infer_goal(name, common_seq)
 
-    weekly_minutes = frequency * avg_dur / 60.0
+    frequency = float(np.clip(frequency, 0.1, 50.0))
+    weekly_minutes = float(np.clip(frequency * avg_dur / 60.0, 1.0, 2400.0))
     annual_minutes = weekly_minutes * 52
+
 
     return WorkflowRecord(
         id=str(uuid.uuid4()),

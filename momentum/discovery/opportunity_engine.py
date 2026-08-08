@@ -232,8 +232,10 @@ def score_all_workflows(workflows: List[WorkflowRecord]) -> List[OpportunityReco
 
 def save_opportunities(opportunities: List[OpportunityRecord]) -> int:
     with get_db() as db:
-        db.bulk_save_objects(opportunities)
+        for opp in opportunities:
+            db.add(opp)
         return len(opportunities)
+
 
 
 def get_all_opportunities() -> List[OpportunityRecord]:

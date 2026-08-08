@@ -83,8 +83,11 @@ def run_simulation(
                     "estimated_weekly_minutes": wf.estimated_weekly_minutes,
                 }
 
+            import uuid as _uuid
+            dummy_opp_id = str(_uuid.uuid4())
+
             auto = AutomationRecord(
-                opportunity_id=opp.id,
+                opportunity_id=dummy_opp_id,
                 workflow_id=opp.workflow_id,
                 name=f"sim-automation-{opp.workflow_id[:8]}",
                 plan_json=json.dumps({"tools": ["classify_ci_failure", "get_github_ci", "git_log", "create_draft_message"], "trigger": {"type": "ci_build_failed"}}),
@@ -99,6 +102,7 @@ def run_simulation(
                 db.add(auto)
                 db.flush()
                 auto_id = auto.id
+
 
             for i in range(8):
                 success = rng.random() < (0.75 + i * 0.02)

@@ -30,6 +30,11 @@ class DiscoveryEngine:
         end_time: Optional[datetime] = None,
         progress_callback=None,
     ) -> Tuple[List[WorkflowRecord], List[OpportunityRecord]]:
+        from momentum.database.base import get_db
+        from momentum.models.workflow import WorkflowRecord as WFModel
+        from momentum.models.opportunity import OpportunityRecord as OppModel
+        from momentum.discovery.opportunity_engine import deduplicate_workflows
+
         if progress_callback:
             progress_callback("Loading sessions...")
 
@@ -54,31 +59,38 @@ class DiscoveryEngine:
         if progress_callback:
             progress_callback(f"Found {len(cluster_groups)} pattern clusters — building workflows...")
 
-        workflows = []
+        raw_workflows = []
         for cluster_id, indices in enumerate(cluster_groups):
             workflow = build_workflow_from_cluster(
                 sessions, indices, embeddings, cluster_id
             )
             if workflow is not None:
-                workflows.append(workflow)
+                raw_workflows.append(workflow)
+
+        workflows = deduplicate_workflows(raw_workflows)
+
+        with get_db() as db:
+            db.query(OppModel).delete()
+            db.query(WFModel).delete()
 
         if workflows:
             save_workflows(workflows)
-            logger.info(f"Saved {len(workflows)} workflows")
+            logger.info(f"Saved {len(workflows)} deduplicated workflows")
         else:
             logger.info("No qualifying workflows built from clusters")
+            return [], []
 
         if progress_callback:
             progress_callback(f"Scoring {len(workflows)} workflows for automation potential...")
 
-        all_wf = get_all_workflows()
-        opportunities = score_all_workflows(all_wf)
+        opportunities = score_all_workflows(workflows)
 
         if opportunities:
             save_opportunities(opportunities)
             logger.info(f"Saved {len(opportunities)} opportunities")
 
         return workflows, opportunities
+
 
     def get_results(self) -> Tuple[List[WorkflowRecord], List[OpportunityRecord]]:
         return get_all_workflows(), get_all_opportunities()
