@@ -12,9 +12,9 @@ class Settings(BaseSettings):
     MOMENTUM_DATA_DIR: str = str(Path.home() / ".momentum")
     MOMENTUM_OBSERVATION_DAYS: int = 7
     MOMENTUM_SIMULATION_MODE: bool = False
-    MOMENTUM_LLM_PROVIDER: str = "openai"
+    MOMENTUM_LLM_PROVIDER: str = "ollama"
     MOMENTUM_LLM_API_KEY: str = ""
-    MOMENTUM_LLM_MODEL: str = "gpt-4o-mini"
+    MOMENTUM_LLM_MODEL: str = "phi4"
     MOMENTUM_EMBEDDING_MODEL: str = "tfidf"
     MOMENTUM_LOG_LEVEL: str = "INFO"
     MOMENTUM_API_HOST: str = "127.0.0.1"

@@ -4,10 +4,11 @@ from momentum.tools.git_tools import BaseTool
 
 logger = logging.getLogger(__name__)
 
-def _get_llm(api_key: str, model: str = "gpt-4o-mini"):
+def _get_llm():
     try:
-        from langchain_openai import ChatOpenAI
-        return ChatOpenAI(model=model, api_key=api_key, temperature=0.3, max_tokens=800)
+        from langchain_community.chat_models import ChatOllama
+        from momentum.config.settings import settings
+        return ChatOllama(model=settings.MOMENTUM_LLM_MODEL, temperature=0.3)
     except Exception:
         return None
 
@@ -25,19 +26,14 @@ class LLMFillTextTool(BaseTool):
         prompt = context.get("prompt", "")
         text_type = context.get("text_type", "message")
         additional_context = context.get("user_context", "")
-        api_key = settings.MOMENTUM_LLM_API_KEY or os.environ.get("OPENAI_API_KEY", "")
-
         if not prompt:
             return {"success": False, "error": "No prompt provided", "output": None}
 
         if dry_run:
             return {"success": True, "output": {"generated_text": f"[dry-run] Generated {text_type}", "dry_run": True}}
 
-        if not api_key:
-            return {"success": False, "error": "API key required for llm_fill_text tool", "output": None}
-
         try:
-            llm = _get_llm(api_key, settings.MOMENTUM_LLM_MODEL)
+            llm = _get_llm()
             if not llm:
                 return {"success": False, "error": "LLM client could not be initialized", "output": None}
 
@@ -69,19 +65,14 @@ class LLMClassifyTool(BaseTool):
         options = context.get("options", [])
         classification_task = context.get("task", "classify")
         criteria = context.get("criteria", "")
-        api_key = settings.MOMENTUM_LLM_API_KEY or os.environ.get("OPENAI_API_KEY", "")
-
         if not text:
             return {"success": False, "error": "No text to classify", "output": None}
 
         if dry_run:
             return {"success": True, "output": {"label": options[0] if options else "relevant", "score": 0.8, "dry_run": True}}
 
-        if not api_key:
-            return {"success": False, "error": "API key required for llm_classify tool", "output": None}
-
         try:
-            llm = _get_llm(api_key, settings.MOMENTUM_LLM_MODEL)
+            llm = _get_llm()
             if not llm:
                 return {"success": False, "error": "LLM client could not be initialized", "output": None}
 

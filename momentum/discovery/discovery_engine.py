@@ -58,12 +58,12 @@ class DiscoveryEngine:
         if progress_callback:
             progress_callback(f"Found {len(cluster_groups)} pattern clusters — building workflows...")
 
+        valid_sessions = [sessions[i] for i in valid_indices]
+
         raw_workflows = []
         for cluster_id, seq_indices in enumerate(cluster_groups):
-                                                                           
-            cluster_sessions_list = [sessions[valid_indices[i]] for i in seq_indices]
             workflow = build_workflow_from_cluster(
-                cluster_sessions_list, seq_indices, embeddings, cluster_id
+                valid_sessions, seq_indices, embeddings, cluster_id
             )
             if workflow is not None:
                 raw_workflows.append(workflow)

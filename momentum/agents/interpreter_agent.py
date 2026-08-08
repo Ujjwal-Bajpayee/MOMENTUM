@@ -7,37 +7,19 @@ from momentum.models.opportunity import OpportunityRecord
 
 logger = logging.getLogger(__name__)
 
-def _get_api_key() -> Optional[str]:
+def _get_llm():
     from momentum.config.settings import settings
-    key = settings.MOMENTUM_LLM_API_KEY or os.environ.get("OPENAI_API_KEY", "")
-    return key.strip() if key else None
-
-def _require_api_key() -> str:
-    key = _get_api_key()
-    if not key:
-        raise EnvironmentError(
-            "\n[MOMENTUM] No API key found.\n"
-            "Set MOMENTUM_LLM_API_KEY=sk-... in your .env file.\n"
-            "This is required for all automation plan generation."
-        )
-    return key
-
-def _get_llm(api_key: str):
-    from langchain_openai import ChatOpenAI
-    from momentum.config.settings import settings
-    return ChatOpenAI(
+    from langchain_community.chat_models import ChatOllama
+    return ChatOllama(
         model=settings.MOMENTUM_LLM_MODEL,
-        api_key=api_key,
         temperature=0.3,
-        max_tokens=700,
     )
 
 def interpret_workflow(workflow: WorkflowRecord) -> Dict:
-    api_key = _require_api_key()
     from langchain.schema import HumanMessage, SystemMessage
     from momentum.config.settings import settings
 
-    llm = _get_llm(api_key)
+    llm = _get_llm()
     steps_text = "\n".join(
         f"- {s.get('event_type','')}: {s.get('application','')} {s.get('action','')[:50]}"
         for s in workflow.get_steps()[:10]
@@ -80,8 +62,6 @@ def generate_automation_plan(
     workflow: WorkflowRecord,
     user_context: Dict,
 ) -> Dict:
-    api_key = _require_api_key()
-    from langchain_openai import ChatOpenAI
     from langchain.schema import HumanMessage, SystemMessage
     from momentum.tools.registry import get_registry
     from momentum.config.settings import settings
@@ -139,12 +119,7 @@ Rules:
 - 4-8 steps maximum
 - Respond in JSON only"""
 
-    llm = ChatOpenAI(
-        model=settings.MOMENTUM_LLM_MODEL,
-        api_key=api_key,
-        temperature=0.2,
-        max_tokens=1200,
-    )
+    llm = _get_llm()
 
     response = llm.invoke([
         SystemMessage(content="You are an automation engineer. Generate practical plans using only the provided tools. Respond in JSON only."),
@@ -166,9 +141,8 @@ Rules:
     return plan
 
 def interpret_opportunity(opportunity: OpportunityRecord, workflow: WorkflowRecord) -> str:
-    api_key = _require_api_key()
     from langchain.schema import HumanMessage
-    llm = _get_llm(api_key)
+    llm = _get_llm()
     prompt = (
         f"Explain in 2-3 sentences why '{workflow.name}' (score: {opportunity.automation_score:.0f}/100, "
         f"confidence: {opportunity.confidence:.0%}) is a strong automation candidate."

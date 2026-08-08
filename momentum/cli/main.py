@@ -395,31 +395,18 @@ def approve(
     opportunity_id: str = typer.Argument(..., help="Opportunity ID to approve"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt"),
 ):
-    """Gather context, generate an LLM automation plan, and activate. Requires MOMENTUM_LLM_API_KEY in .env."""
+    """Gather context, generate an LLM automation plan, and activate."""
     from momentum.discovery.opportunity_engine import get_opportunity_by_id
     from momentum.discovery.workflow_builder import get_workflow_by_id
     from momentum.reporting.opportunity_formatter import format_approve_prompt
     from momentum.models.automation import AutomationRecord
     from momentum.models.opportunity import OpportunityRecord
     from momentum.database.base import get_db
-    from momentum.agents.interpreter_agent import generate_automation_plan, _get_api_key
+    from momentum.agents.interpreter_agent import generate_automation_plan
     from momentum.agents.context_gatherer import gather_context
     import json
 
     _ensure_db()
-
-    api_key = _get_api_key()
-    if not api_key:
-        console.print()
-        console.print(Panel.fit(
-            "[bold red]MOMENTUM_LLM_API_KEY not set[/bold red]\n\n"
-            "All automation plan generation requires an LLM.\n"
-            "Add the following to your [bold].env[/bold] file and restart:\n\n"
-            "  [bold cyan]MOMENTUM_LLM_API_KEY=sk-...[/bold cyan]\n\n"
-            "[dim]Get your key at: https://platform.openai.com/api-keys[/dim]",
-            border_style="red",
-        ))
-        raise typer.Exit(1)
 
     opp = get_opportunity_by_id(opportunity_id)
     if not opp:
