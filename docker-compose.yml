@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  momentum-api:
+    build: .
+    container_name: momentum-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - momentum_data:/data
+    environment:
+      - MOMENTUM_DB=/data/momentum.db
+      - MOMENTUM_DATA_DIR=/data
+      - MOMENTUM_API_HOST=0.0.0.0
+      - MOMENTUM_API_PORT=8000
+      - MOMENTUM_LOG_LEVEL=INFO
+      - MOMENTUM_SIMULATION_MODE=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  momentum_data:
+    driver: local

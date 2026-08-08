@@ -1,0 +1,2 @@
+[console_scripts]
+momentum = momentum.cli.main:app
