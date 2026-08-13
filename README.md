@@ -2,30 +2,36 @@
 
 # ⚡ MOMENTUM
 
-**A privacy-first, human-in-the-loop ML system that discovers recurring workflows from unlabelled desktop activity data, ranks which workflows are worth automating, explains its recommendations, and improves from feedback.**
+**A privacy-first, human-in-the-loop Agentic ML system that discovers recurring workflows from unlabelled desktop activity data, ranks automation opportunities, and autonomously generates Python automation scripts.**
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-Contextual%20Bandit-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org)
-[![scikit-learn](https://img.shields.io/badge/scikit--learn-DBSCAN%20Clustering-F7931E?style=flat-square&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
-[![License](https://img.shields.io/badge/License-MIT-22C55E?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![PyTorch](https://img.shields.io/badge/PyTorch-Contextual%20Bandit-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-DBSCAN%20Clustering-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
+[![LangGraph](https://img.shields.io/badge/LangGraph-Agentic%20Execution-000000?style=for-the-badge&logo=langchain&logoColor=white)](https://python.langchain.com/)
+[![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
 
 </div>
 
 ---
 
-## 📖 Overview
+## Overview
 
-MOMENTUM is an advanced machine learning system designed to solve the problem of **unsupervised workflow discovery** from unlabelled event streams. By silently observing desktop interactions (e.g., terminal usage, git operations, browser activity), MOMENTUM identifies and learns complex recurring patterns without requiring manual rule definitions.
+MOMENTUM is an advanced local-first machine learning system designed to solve the problem of **unsupervised workflow discovery and autonomous automation**. 
 
-Leveraging a robust pipeline of NLP and clustering techniques, MOMENTUM autonomously discovers workflows. A PyTorch-based neural contextual bandit then ranks these discoveries based on key automation metrics—including frequency, time cost, risk, and determinism. It explains its reasoning to the user and dynamically improves its policy based on human approval or rejection feedback.
+By silently observing desktop interactions (e.g., terminal usage, git operations, browser activity), MOMENTUM identifies and learns complex recurring patterns without requiring manual rule definitions. It bridges the gap between raw, noisy event streams and executable automation code through a sophisticated multi-stage AI pipeline.
 
-Finally, integrating with local LLMs via Ollama, MOMENTUM generates and executes custom automation plans tailored to the discovered workflows.
+### Key Features
+- **Unsupervised Discovery:** Uses sequence-aware TF-IDF encoding and self-tuning DBSCAN clustering to find hidden workflow patterns in unlabelled data.
+- **Contextual Bandit Ranking:** A PyTorch neural network (stabilized via Experience Replay) ranks workflows based on frequency, time cost, risk, and determinism.
+- **Explainable AI:** True gradient-based saliency mapping explains exactly *why* the AI recommended a specific workflow.
+- **Agentic Code Generation:** Uses **LangGraph** and local LLMs (default: `deepseek-r1:8b` via Ollama) to autonomously write, self-correct, and execute custom Python scripts that automate your daily tasks.
+- **100% Local & Private:** All data, embeddings, and models run exclusively on your local hardware.
 
 ---
 
 ## Architecture
 
-**Goal:** Discover recurring workflows from an unlabelled, noisy stream of desktop events, cluster them accurately, rank their automation potential, and build custom automations.
+**Goal:** Discover recurring workflows from an unlabelled stream of desktop events, cluster them accurately, rank their automation potential, and build custom automations dynamically.
 
 ```mermaid
 graph TD
@@ -36,83 +42,43 @@ graph TD
 
     subgraph Unsupervised Discovery
         TFIDF["TF-IDF Sequence Encoder (N-Grams)"]
-        DBSCAN["DBSCAN Clustering (Precomputed Distance)"]
+        DBSCAN["DBSCAN Clustering (Auto-tuning eps)"]
         Dedupe["Centroid Deduplication"]
     end
 
     subgraph Recommendation & RL
         Features["Feature Extraction (Risk, Freq, Time)"]
-        Bandit["Contextual Bandit (PyTorch Policy Net)"]
-        Explain["Explainable Scoring"]
+        Bandit["Contextual Bandit (PyTorch w/ Replay Buffer)"]
+        Explain["Saliency-Based Explainability"]
     end
 
     subgraph Agentic Execution
         Context["Human-in-the-Loop Q&A"]
-        LLM["Local LLM Plan Generation (Ollama)"]
-        Executor["Headless Execution (Playwright/Shell)"]
-        Reward["Outcome → Reward Feedback"]
+        LG["LangGraph StateGraph"]
+        LLM["Code Gen (DeepSeek-r1:8b)"]
+        AST["AST Syntax Validation"]
+        Executor["Subprocess Secure Execution"]
     end
 
     Events --> Scrubber --> TFIDF --> DBSCAN --> Dedupe
     Dedupe --> Features --> Bandit --> Explain
-    Explain --> Context --> LLM --> Executor --> Reward
-    Reward --> Bandit
+    Explain --> Context --> LG
+    LG <--> LLM
+    LG <--> AST
+    LG --> Executor
+    Executor --> Bandit
 ```
-
----
-
-## Evaluation & Benchmarks
-
-MOMENTUM includes a built-in synthetic benchmark generator to evaluate clustering and ranking performance without compromising user privacy.
-
-### Clustering Baseline Comparison
-We compare the default **TF-IDF Unigram** representation against a sequence-aware **TF-IDF N-gram** model using the same DBSCAN hyperparameters (`eps=0.35, min_samples=3`).
-
-Run the benchmark:
-```bash
-python -m momentum benchmark --num-sessions 200
-```
-
-| Metric | TF-IDF Unigram | TF-IDF N-gram |
-|:---|:---:|:---:|
-| **Adjusted Rand Index (ARI)** | ~0.81 | ~0.75 |
-| **Normalized Mutual Info (NMI)**| ~0.86 | ~0.86 |
-| **Cluster Purity** | 1.000 | 0.833 |
-| **Signal Coverage** | ~0.93 | ~0.95 |
-| **Noise Rate** | ~0.19 | ~0.07 |
-
-### Contextual Bandit Policy Evaluation
-We simulate 1,000 workflow contexts to evaluate the PyTorch contextual bandit against static baselines (e.g., Always-Recommend vs. Fixed-Score-Threshold).
-
-Run the policy evaluation:
-```bash
-python -m momentum policy-eval --steps 1000
-```
-
----
-
-## Privacy & Limitations
-
-**Privacy-First:**
-- All ML models (TF-IDF, DBSCAN, Bandit, and Ollama LLMs) run **100% locally**.
-- Event data is aggressively scrubbed of PII, passwords, and sensitive paths prior to storage.
-- No external API calls are made during the workflow discovery, ranking, or automation generation process.
-
-**Known Limitations & Disclosures:**
-1. **Synthetic-Only Validation:** The current benchmarking suite relies on a synthetic event generator. The distribution of synthetic events may contain gaps when compared to real-world, highly chaotic desktop usage. 
-2. **Cold Start Period:** The system requires approximately 3-7 days of observation to accumulate sufficient data density for DBSCAN to form meaningful clusters.
-3. **Evaluation Data:** The clustering ARI/NMI metrics are computed using synthetic labels and have not yet been validated on a human-annotated real-world dataset.
 
 ---
 
 ## Quick Start
 
 ### Prerequisites
-- Python 3.12 or higher
-- Windows (PowerShell), macOS, or Linux
-- [Ollama](https://ollama.com/) (For local LLM execution)
+- **Python 3.12+**
+- **Windows (PowerShell), macOS, or Linux**
+- **[Ollama](https://ollama.com/)** (Required for the Agentic LLM execution)
 
-### Installation
+### 1. Installation
 
 Clone the repository and install the daemon:
 ```bash
@@ -121,9 +87,9 @@ cd momentum
 pip install -e .
 ```
 
-### Simulation Mode
+### 2. Run the Simulation
 
-Generate a week of synthetic data and run the full ML pipeline to observe MOMENTUM in action:
+Generate a week of synthetic data and run the full ML pipeline to observe MOMENTUM in action without touching your real data:
 
 ```bash
 # Windows
@@ -134,38 +100,54 @@ python -m momentum simulate --days 7
 PYTHONUTF8=1 python -m momentum simulate --days 7
 ```
 
-### Exploring the Pipeline
+### 3. Explore the Agentic Pipeline
+
+Once the simulation completes, use the CLI to interact with the discovered workflows:
 
 ```bash
-python -m momentum opportunities                   # Surface discovered automation clusters
-python -m momentum inspect <opportunity_id>        # View explainable score breakdown for a specific opportunity
-python -m momentum evaluate                        # Run clustering evaluation against synthetic labels
-python -m momentum benchmark                       # Compare TF-IDF baseline methodologies
-python -m momentum policy-eval                     # Evaluate the RL policy performance
+# 1. Surface discovered automation clusters ranked by the Bandit
+python -m momentum opportunities
+
+# 2. View explainable saliency breakdown for a specific opportunity
+python -m momentum inspect <opportunity_id>
+
+# 3. Approve a workflow to trigger LangGraph + DeepSeek to generate a Python script!
+python -m momentum approve <opportunity_id>
+
+# 4. Execute the generated automation script
+python -m momentum run <automation_id>
 ```
 
 ---
 
-## Configuration
+## Evaluation & Benchmarks
 
-Configure MOMENTUM by setting variables in a `.env` file at the root of the project:
+MOMENTUM includes a built-in synthetic benchmark generator to evaluate clustering and ranking performance safely.
 
-```env
-# Storage
-MOMENTUM_DB=~/.momentum/momentum.db
+### Clustering Evaluation
+We compare the default **TF-IDF Unigram** representation against a sequence-aware **TF-IDF N-gram** model. The DBSCAN hyperparameters are automatically tuned during runtime to maximize cluster coherence.
+```bash
+python -m momentum benchmark --num-sessions 200
+```
 
-# ML Configuration
-MOMENTUM_EPSILON=0.15          # Bandit exploration rate
-MOMENTUM_LEARNING_RATE=0.001   # Bandit learning rate
-MOMENTUM_EMBEDDING_MODEL=tfidf # Sequence embedding strategy
-
-# Local LLM Integration
-MOMENTUM_LLM_PROVIDER=ollama
-MOMENTUM_LLM_MODEL=phi4
+### Contextual Bandit Policy Evaluation
+Simulate 1,000 workflow contexts to evaluate the PyTorch contextual bandit against static baselines (e.g., Always-Recommend vs. Fixed-Score-Threshold).
+```bash
+python -m momentum policy-eval --steps 1000
 ```
 
 ---
 
-## License
+## Privacy & Data Storage
+
+**Privacy-First Design:**
+- **Zero Cloud Dependencies:** All ML models (TF-IDF, DBSCAN, PyTorch Bandit, and Ollama LLMs) run **100% locally**.
+- **Data Scrubbing:** Event data is aggressively scrubbed of PII, passwords, and sensitive paths prior to storage.
+- **Local Storage:** Everything is stored transparently on your hard drive in a local SQLite database (`~/.momentum/momentum.db`).
+
+---
+
+
+##  License
 
 MIT (c) 2026 MOMENTUM Contributors

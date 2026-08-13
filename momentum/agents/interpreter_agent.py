@@ -15,6 +15,32 @@ def _get_llm():
         temperature=0.3,
     )
 
+def _parse_json_response(text: str, default_fallback: Dict) -> Dict:
+    import json
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.lower().startswith("json"):
+            text = text[4:]
+        text = text.rstrip("`").strip()
+    
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    
+    try:
+        start_idx = text.find('{')
+        end_idx = text.rfind('}')
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            extracted = text[start_idx:end_idx+1]
+            return json.loads(extracted)
+    except json.JSONDecodeError:
+        pass
+        
+    logger.warning("Failed to parse LLM JSON response. Using fallback.")
+    return default_fallback
+
 def interpret_workflow(workflow: WorkflowRecord) -> Dict:
     from langchain.schema import HumanMessage, SystemMessage
     from momentum.config.settings import settings
@@ -49,12 +75,15 @@ Keep each field under 100 words. Respond in JSON only."""
         SystemMessage(content="You are a workflow analysis expert. Respond in JSON only."),
         HumanMessage(content=prompt),
     ])
-    text = response.content.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    data = json.loads(text)
+    
+    fallback = {
+        "goal": "Unknown goal",
+        "automation_explanation": "Failed to generate explanation.",
+        "risk_explanation": "Unknown risks.",
+        "confidence_explanation": "Unknown confidence."
+    }
+    
+    data = _parse_json_response(response.content, fallback)
     data["model"] = settings.MOMENTUM_LLM_MODEL
     return data
 
@@ -62,12 +91,89 @@ def generate_automation_plan(
     workflow: WorkflowRecord,
     user_context: Dict,
 ) -> Dict:
+    from typing import TypedDict, List
+    from langgraph.graph import StateGraph, END
     from langchain.schema import HumanMessage, SystemMessage
-    from momentum.tools.registry import get_registry
     from momentum.config.settings import settings
+    import ast
 
-    registry = get_registry()
-    tool_schema = registry.get_schema_for_llm()
+    class AgentState(TypedDict):
+        workflow_text: str
+        errors: List[str]
+        iterations: int
+        generated_code: str
+        final_plan: Dict
+
+    llm = _get_llm()
+
+    def generate_node(state: AgentState):
+        prompt = state["workflow_text"]
+        if state["errors"]:
+            prompt += "\n\nThe previous code had the following syntax errors. Please fix them:\n"
+            prompt += "\n".join(state["errors"])
+            prompt += "\n\nRespond with the updated JSON plan containing the fixed Python script."
+        
+        response = llm.invoke([
+            SystemMessage(content="You are an automation engineer. Generate a practical Python script. Respond in JSON only."),
+            HumanMessage(content=prompt),
+        ])
+
+        fallback = {
+            "name": "Fallback Plan",
+            "description": "Failed to parse generated plan.",
+            "trigger": {"type": "manual"},
+            "type": "python",
+            "code": "print('Fallback empty script executed.')\n",
+            "estimated_time_saved_minutes": 0,
+            "risks": ["parsing_failure"]
+        }
+        
+        plan = _parse_json_response(response.content, fallback)
+        return {
+            "generated_code": plan.get("code", ""),
+            "final_plan": plan,
+            "iterations": state["iterations"] + 1,
+            "errors": []
+        }
+
+    def validate_node(state: AgentState):
+        code = state["generated_code"]
+        errors = []
+        try:
+            ast.parse(code)
+        except SyntaxError as e:
+            errors.append(f"SyntaxError on line {e.lineno}: {e.msg}")
+        except Exception as e:
+            errors.append(f"Error parsing code: {str(e)}")
+        
+        return {"errors": errors}
+
+    def format_node(state: AgentState):
+        plan = state["final_plan"]
+        plan["generated_by"] = "langgraph"
+        plan["model"] = settings.MOMENTUM_LLM_MODEL
+        plan["iterations"] = state["iterations"]
+        return {"final_plan": plan}
+
+    def should_continue(state: AgentState):
+        if len(state["errors"]) > 0 and state["iterations"] < 3:
+            return "generate"
+        return "format"
+
+    graph_builder = StateGraph(AgentState)
+    graph_builder.add_node("generate", generate_node)
+    graph_builder.add_node("validate", validate_node)
+    graph_builder.add_node("format", format_node)
+
+    graph_builder.set_entry_point("generate")
+    graph_builder.add_edge("generate", "validate")
+    graph_builder.add_conditional_edges("validate", should_continue, {
+        "generate": "generate",
+        "format": "format"
+    })
+    graph_builder.add_edge("format", END)
+
+    app = graph_builder.compile()
 
     steps_text = "\n".join(
         f"  {i+1}. {s.get('event_type','unknown')}: {s.get('application','?')} -> {s.get('action','')[:60]}"
@@ -91,54 +197,35 @@ Workflow stats:
 User provided context:
 {context_text}
 
-{tool_schema}
+Write an executable, self-contained Python script that automates this workflow.
+The script should be robust and handle potential errors.
 
-Generate a JSON automation plan using ONLY tools from the list above:
-{ 
+Generate a JSON automation plan with the following schema:
+{{
   "name": "short descriptive name",
   "description": "one sentence description",
-  "trigger": { "type": "scheduled|event|manual", "cron": "0 9 * * 1-5"} ,
-  "steps": [
-    { 
-      "tool": "tool_name",
-      "params": { "key": "value"} ,
-      "description": "what this step does",
-      "requires_confirmation": false,
-      "critical": false
-    } 
-  ],
-  "estimated_time_saved_minutes": 0,
-  "risks": ["risk1"],
-  "permissions_needed": ["browser.read"]
-} 
+  "trigger": {{ "type": "manual" }},
+  "type": "python",
+  "code": "import os\\n\\nprint('Hello world!')\\n",
+  "estimated_time_saved_minutes": 5,
+  "risks": ["list any risks of running this code"]
+}}
 
 Rules:
-- Only use tools from the Available tools list
-- requires_confirmation=true for steps that write, submit, or send anything
-- critical=true if failure should abort the automation
-- 4-8 steps maximum
-- Respond in JSON only"""
+- The `code` field MUST contain a valid Python script as a string. Use \\n for newlines.
+- Do not use markdown backticks inside the `code` string.
+- Respond in JSON only."""
 
-    llm = _get_llm()
+    initial_state = {
+        "workflow_text": prompt,
+        "errors": [],
+        "iterations": 0,
+        "generated_code": "",
+        "final_plan": {}
+    }
 
-    response = llm.invoke([
-        SystemMessage(content="You are an automation engineer. Generate practical plans using only the provided tools. Respond in JSON only."),
-        HumanMessage(content=prompt),
-    ])
-
-    text = response.content.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-        text = text.rstrip("`").strip()
-
-    plan = json.loads(text)
-    valid_tool_names = registry.list_tool_names()
-    plan["steps"] = [s for s in plan.get("steps", []) if s.get("tool") in valid_tool_names]
-    plan["generated_by"] = "llm"
-    plan["model"] = settings.MOMENTUM_LLM_MODEL
-    return plan
+    result = app.invoke(initial_state)
+    return result["final_plan"]
 
 def interpret_opportunity(opportunity: OpportunityRecord, workflow: WorkflowRecord) -> str:
     from langchain.schema import HumanMessage

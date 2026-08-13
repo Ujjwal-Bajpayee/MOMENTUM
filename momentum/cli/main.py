@@ -444,13 +444,19 @@ def approve(
     plan_table.add_row("Est. time saved", f"{llm_plan.get('estimated_time_saved_minutes', 0)} min/run")
     console.print(plan_table)
 
-    steps = llm_plan.get("steps", [])
-    if steps:
-        console.print("\n[bold]Steps:[/bold]")
-        for i, step in enumerate(steps, 1):
-            confirm_flag = " [yellow][CONFIRM][/yellow]" if step.get("requires_confirmation") else ""
-            critical_flag = " [red][CRITICAL][/red]" if step.get("critical") else ""
-            console.print(f"  {i}. [cyan]{step['tool']}[/cyan] — {step.get('description', '')}{confirm_flag}{critical_flag}")
+    if llm_plan.get("type") == "python" and "code" in llm_plan:
+        from rich.syntax import Syntax
+        console.print("\n[bold]Generated Code:[/bold]")
+        syntax = Syntax(llm_plan["code"], "python", theme="monokai", line_numbers=True)
+        console.print(syntax)
+    else:
+        steps = llm_plan.get("steps", [])
+        if steps:
+            console.print("\n[bold]Steps:[/bold]")
+            for i, step in enumerate(steps, 1):
+                confirm_flag = " [yellow][CONFIRM][/yellow]" if step.get("requires_confirmation") else ""
+                critical_flag = " [red][CRITICAL][/red]" if step.get("critical") else ""
+                console.print(f"  {i}. [cyan]{step['tool']}[/cyan] — {step.get('description', '')}{confirm_flag}{critical_flag}")
 
     risks = llm_plan.get("risks", [])
     if risks:
@@ -468,7 +474,7 @@ def approve(
 
     from uuid import uuid4
     auto_id = str(uuid4())
-    tools_in_plan = [s["tool"] for s in steps]
+    tools_in_plan = ["python_script"] if llm_plan.get("type") == "python" else [s["tool"] for s in llm_plan.get("steps", [])]
 
     with get_db() as db:
         automation = AutomationRecord(
@@ -657,6 +663,20 @@ def run_automation(
         result_table.add_row("Failure reason", f"[red]{outcome.failure_reason}[/red]")
 
     console.print(result_table)
+    
+    if auto.get_plan().get("type") == "python":
+        actions = json.loads(outcome.actions_json) if outcome.actions_json else []
+        if actions and actions[-1].get("tool") == "python_script":
+            script_result = actions[-1]
+            stdout_str = script_result.get("stdout", "")
+            stderr_str = script_result.get("stderr", "")
+            if stdout_str:
+                console.print("\n[bold cyan]STDOUT:[/bold cyan]")
+                console.print(stdout_str.strip())
+            if stderr_str:
+                console.print("\n[bold red]STDERR:[/bold red]")
+                console.print(stderr_str.strip())
+
     console.print()
 
 @app.command()

@@ -4,6 +4,8 @@ import torch.optim as optim
 import numpy as np
 from typing import Tuple, List, Optional, Dict
 from pathlib import Path
+from collections import deque
+import random
 
 CONTEXT_DIM = 12
 ACTION_DIM = 8
@@ -18,6 +20,22 @@ ACTIONS = [
     "REDUCE_AUTONOMY",
     "DO_NOT_AUTOMATE",
 ]
+
+class ReplayBuffer:
+    def __init__(self, capacity: int = 1000):
+        self.buffer = deque(maxlen=capacity)
+    
+    def push(self, context: torch.Tensor, action: int, reward: float):
+        self.buffer.append((context, action, reward))
+        
+    def sample(self, batch_size: int) -> List[Tuple[torch.Tensor, int, float]]:
+        return random.sample(self.buffer, min(batch_size, len(self.buffer)))
+    
+    def get_all(self) -> List[Tuple[torch.Tensor, int, float]]:
+        return list(self.buffer)
+    
+    def __len__(self) -> int:
+        return len(self.buffer)
 
 class PolicyNetwork(nn.Module):
     def __init__(self, context_dim: int = CONTEXT_DIM, action_dim: int = ACTION_DIM):
@@ -40,8 +58,10 @@ class ContextualBandit:
         weights_path: Optional[str] = None,
         epsilon: float = 0.15,
         lr: float = 0.001,
+        batch_size: int = 16,
     ):
         self.epsilon = epsilon
+        self.batch_size = batch_size
         self.network = PolicyNetwork()
         self.optimizer = optim.Adam(self.network.parameters(), lr=lr)
         self.loss_fn = nn.MSELoss()
@@ -49,6 +69,7 @@ class ContextualBandit:
         self.version = 0
         self._reward_history: List[float] = []
         self._loss_history: List[float] = []
+        self.replay_buffer = ReplayBuffer(capacity=1000)
 
         if weights_path and Path(weights_path).exists():
             self._load(weights_path)
@@ -91,6 +112,14 @@ class ContextualBandit:
     def explain_action(self, workflow_context: Dict) -> Dict:
         action, q_dict = self.get_recommended_action(workflow_context)
         context_tensor = self._extract_context(workflow_context)
+        
+        context_tensor.requires_grad_(True)
+        q_values = self.network(context_tensor)
+        action_idx = int(q_values.argmax().item())
+        
+        q_values[action_idx].backward()
+        saliency = (context_tensor.grad * context_tensor).detach().numpy()
+        
         features_names = [
             "frequency", "average_duration", "duration_variance", "repetition_score",
             "determinism_score", "risk_score", "decision_count", "estimated_savings",
@@ -98,10 +127,15 @@ class ContextualBandit:
             "workflow_similarity"
         ]
         
-        feature_vals = context_tensor.numpy().tolist()
-        top_features = sorted(zip(features_names, feature_vals), key=lambda x: x[1], reverse=True)[:3]
+        impacts = np.abs(saliency)
+        top_indices = impacts.argsort()[-3:][::-1]
         
-        reason = "Based on high " + ", ".join([f[0].replace('_', ' ') for f in top_features])
+        top_features = []
+        for idx in top_indices:
+            val = float(saliency[idx])
+            top_features.append((features_names[idx], val))
+            
+        reason = "Based on " + ", ".join([f"{'high' if v > 0 else 'low'} {n.replace('_', ' ')}" for n, v in top_features])
         
         return {
             "selected_action": action,
@@ -116,15 +150,22 @@ class ContextualBandit:
         action_idx: int,
         reward: float,
     ) -> float:
-        with torch.no_grad():
-            current_q = self.network(context_tensor)
-
-        target_q = current_q.clone()
-        target_q[action_idx] = torch.tensor(reward, dtype=torch.float32)
-
+        self.replay_buffer.push(context_tensor, action_idx, reward)
+        
+        batch = self.replay_buffer.sample(self.batch_size)
+        
+        contexts = torch.stack([b[0] for b in batch])
+        actions = torch.tensor([b[1] for b in batch], dtype=torch.long)
+        rewards = torch.tensor([b[2] for b in batch], dtype=torch.float32)
+        
         self.optimizer.zero_grad()
-        predicted_q = self.network(context_tensor)
-        loss = self.loss_fn(predicted_q, target_q.detach())
+        predicted_q = self.network(contexts)
+        
+        target_q = predicted_q.clone().detach()
+        for i, a in enumerate(actions):
+            target_q[i, a] = rewards[i]
+            
+        loss = self.loss_fn(predicted_q, target_q)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.network.parameters(), 1.0)
         self.optimizer.step()

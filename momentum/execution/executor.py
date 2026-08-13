@@ -3,7 +3,6 @@ import time
 import logging
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
-from momentum.tools.registry import get_registry
 from momentum.permissions.registry import get_permission_registry
 from momentum.models.automation import AutomationRecord
 from momentum.models.outcome import OutcomeRecord
@@ -34,7 +33,6 @@ def execute_automation(
     trigger_context: Optional[Dict] = None,
     dry_run: bool = False,
 ) -> OutcomeRecord:
-    registry = get_registry()
     valid, reason = _validate_execution_preconditions(automation)
     if not valid:
         return _create_failed_outcome(automation, reason, trigger_context)
@@ -52,61 +50,65 @@ def execute_automation(
     start_time = time.time()
     execution_success = True
     failure_reason = None
+    stdout_captured = ""
+    stderr_captured = ""
 
-    raw_steps = plan.get("steps", [])
-    if raw_steps and isinstance(raw_steps[0], dict) and "tool" in raw_steps[0]:
-        steps_to_run = raw_steps
-    else:
-        steps_to_run = [
-            {"tool": t, "params": {}, "description": t, "requires_confirmation": False, "critical": False}
-            for t in plan.get("tools", automation.get_tools())
-        ]
+    is_python_code = plan.get("type") == "python" and "code" in plan
 
-    for step in steps_to_run:
-        tool_name = step.get("tool", "")
-        params = step.get("params", {})
-        step_context = {**context, **params}
-
-        if step.get("requires_confirmation") and not dry_run:
+    if is_python_code:
+        code_str = plan["code"]
+        if not dry_run:
             try:
-                answer = input(f"\n  [MOMENTUM] Confirm step: {step.get('description', tool_name)} (y/N): ").strip().lower()
+                answer = input(f"\n  [MOMENTUM] This automation executes raw Python code. Run it? (y/N): ").strip().lower()
                 if answer not in ("y", "yes"):
                     execution_success = False
-                    failure_reason = f"User declined step: {tool_name}"
-                    actions_executed.append({
-                        "tool": tool_name,
-                        "success": False,
-                        "execution_time_ms": 0,
-                        "dry_run": dry_run,
-                        "skipped": True,
-                        "reason": "user_declined",
-                    })
-                    break
+                    failure_reason = "User declined raw code execution"
+                else:
+                    import subprocess
+                    import tempfile
+                    import os
+                    
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as tf:
+                        tf.write(code_str)
+                        tmp_path = tf.name
+                    
+                    try:
+                        result = subprocess.run(
+                            ["python", tmp_path],
+                            capture_output=True,
+                            text=True,
+                            timeout=120
+                        )
+                        stdout_captured = result.stdout
+                        stderr_captured = result.stderr
+                        if result.returncode != 0:
+                            execution_success = False
+                            failure_reason = f"Script exited with {result.returncode}"
+                    except Exception as e:
+                        execution_success = False
+                        failure_reason = str(e)
+                    finally:
+                        try:
+                            os.remove(tmp_path)
+                        except OSError:
+                            pass
             except (EOFError, KeyboardInterrupt):
-                pass
-
-        tool_start = time.time()
-        result = registry.execute_tool(tool_name, step_context, dry_run=dry_run)
-        tool_elapsed = time.time() - tool_start
-
+                execution_success = False
+                failure_reason = "User aborted"
+        else:
+            stdout_captured = "(Dry run - code not executed)"
+        
         actions_executed.append({
-            "tool": tool_name,
-            "success": result.get("success", False),
-            "execution_time_ms": tool_elapsed * 1000,
-            "dry_run": dry_run,
-            "description": step.get("description", ""),
+            "tool": "python_script",
+            "success": execution_success,
+            "stdout": stdout_captured,
+            "stderr": stderr_captured,
+            "dry_run": dry_run
         })
-
-        output = result.get("output", {})
-        if isinstance(output, dict):
-            context.update({k: v for k, v in output.items() if k not in ("dry_run",)})
-
-        if not result.get("success", True):
-            execution_success = False
-            failure_reason = result.get("error", f"Tool {tool_name} failed")
-            logger.warning(f"Tool {tool_name} failed: {failure_reason}")
-            if step.get("critical", False):
-                break
+    else:
+        execution_success = False
+        failure_reason = "Legacy tool-based automations are no longer supported. Please regenerate this automation."
+        logger.warning(failure_reason)
 
     elapsed = time.time() - start_time
 
